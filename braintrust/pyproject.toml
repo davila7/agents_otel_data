@@ -1,0 +1,14 @@
+[project]
+name = "braintrust-demo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.118.0",
+    "braintrust>=0.2.6",
+    "cryptography<45",
+    "opentelemetry-exporter-otlp-proto-http>=1.43.0",
+    "opentelemetry-sdk>=1.43.0",
+    "pydantic-ai>=2.15.0",
+]

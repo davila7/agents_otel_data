@@ -1,0 +1,12 @@
+[project]
+name = "logfire-demo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.117.1",
+    "cryptography<45",
+    "logfire[system-metrics]>=4.38.0",
+    "pydantic-ai>=2.15.0",
+]

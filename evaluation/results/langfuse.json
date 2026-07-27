@@ -1,0 +1,77 @@
+{
+  "platform": "langfuse",
+  "notes": {
+    "latency_samples_ms": [
+      1293.1,
+      964.5,
+      1840.9
+    ],
+    "recent_trace_names": [
+      "chat-hello",
+      "time-assistant-mcp",
+      "travel-assistant"
+    ],
+    "chat_hello_traces_found": 5,
+    "metrics_api_sample": [
+      {
+        "name": "chat-hello",
+        "count_count": "5"
+      },
+      {
+        "name": "travel-assistant",
+        "count_count": "2"
+      },
+      {
+        "name": "time-assistant-mcp",
+        "count_count": "2"
+      }
+    ],
+    "free_expression_probe": "HTTP 400: {\"message\":\"Invalid metric count(*) + 1. Must be one of count,observationsCount,scoresCount,uniqueUserIds,uniqueSessionIds,latency,totalTokens,totalCost\",\"error\":\"InvalidRequestError\"}",
+    "csv_accept_header_result": "HTTP 200, content-type=application/json; charset=utf-8",
+    "malformed_query_response": "HTTP 400: {\"message\":\"Invalid request data\",\"error\":[{\"origin\":\"string\",\"code\":\"invalid_format\",\"format\":\"datetime\",\"pattern\":\"/^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|("
+  },
+  "auth_works": true,
+  "retrieval_latency_ms": 1293.1,
+  "completeness": {
+    "trace_id": "03d30849a8adeed7793b32ef573a5ce4",
+    "trace_name": "travel-assistant",
+    "llm_input": true,
+    "llm_output": true,
+    "model_name": "claude-sonnet-4-5-20250929",
+    "token_usage": {
+      "input": 666,
+      "output": 161,
+      "present": true
+    },
+    "cost_usd": 0.010347,
+    "latency_per_span": true,
+    "tool_call_args": true,
+    "tool_call_results": true,
+    "span_tree": true,
+    "span_count": 8
+  },
+  "query_flexibility": {
+    "filter_by_time": true,
+    "filter_by_name_or_attribute": true,
+    "aggregation": true,
+    "free_sql_or_dsl": false
+  },
+  "pagination": {
+    "mechanism": "offset (page/limit with meta.totalPages)",
+    "second_page_fetched": true,
+    "meta_first_page": {
+      "page": 1,
+      "limit": 2,
+      "totalItems": 9,
+      "totalPages": 5
+    },
+    "observations_v2_meta_keys": [
+      "cursor"
+    ]
+  },
+  "export_formats": [
+    "json"
+  ],
+  "time_to_queryable_s": 46.5,
+  "dx_friction": "Auth is simple HTTP Basic (public key as user, secret key as password); no token exchange needed. Endpoints are predictable REST with page/limit pagination and meta.totalItems/totalPages in every list response. The metrics API takes a URL-encoded JSON query which is awkward to hand-build but works. Malformed fromTimestamp returned HTTP 400 with a structured error body naming the invalid field."
+}

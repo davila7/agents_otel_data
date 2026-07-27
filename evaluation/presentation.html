@@ -1,0 +1,468 @@
+<title>Agent Observability Benchmark — Read-API Showdown 2026</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --ring: rgba(11, 11, 11, 0.10);
+    --s-braintrust: #2a78d6;      /* categorical slot 1 */
+    --s-langsmith: #eb6834;       /* slot 2 */
+    --s-langfuse: #1baf7a;        /* slot 3 */
+    --s-logfire: #eda100;         /* slot 4 */
+    --good-text: #006300;
+    --seq-100:#cde2fb; --seq-150:#b7d3f6; --seq-200:#9ec5f4; --seq-250:#86b6ef;
+    --seq-300:#6da7ec; --seq-350:#5598e7; --seq-400:#3987e5; --seq-450:#2a78d6;
+    --seq-500:#256abf; --seq-550:#1c5cab; --seq-600:#184f95; --seq-650:#104281;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --ring: rgba(255, 255, 255, 0.10);
+      --s-braintrust: #3987e5;
+      --s-langsmith: #d95926;
+      --s-langfuse: #199e70;
+      --s-logfire: #c98500;
+      --good-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --ring: rgba(255, 255, 255, 0.10);
+    --s-braintrust: #3987e5;
+    --s-langsmith: #d95926;
+    --s-langfuse: #199e70;
+    --s-logfire: #c98500;
+    --good-text: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 0 24px 96px; }
+  code, .num { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- header ---------- */
+  header { padding: 72px 0 40px; border-bottom: 1px solid var(--grid); }
+  .eyebrow {
+    font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 16px; font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(30px, 4.6vw, 46px); line-height: 1.08; margin: 0 0 18px;
+    font-weight: 750; letter-spacing: -0.015em; text-wrap: balance; max-width: 21ch;
+  }
+  .standfirst { max-width: 62ch; color: var(--ink-2); font-size: 18px; margin: 0; }
+  .standfirst strong { color: var(--ink); }
+
+  h2 {
+    font-size: 13px; letter-spacing: 0.13em; text-transform: uppercase;
+    color: var(--muted); font-weight: 650; margin: 0 0 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--grid); }
+  section { margin-top: 64px; }
+
+  /* ---------- verdict / ranked bars ---------- */
+  .verdict-grid { display: grid; grid-template-columns: 300px 1fr; gap: 32px; align-items: stretch; }
+  @media (max-width: 760px) { .verdict-grid { grid-template-columns: 1fr; } }
+  .winner-tile {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 10px;
+    border-top: 3px solid var(--s-logfire);
+    padding: 28px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  }
+  .winner-tile .label { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .winner-tile .name { font-size: 30px; font-weight: 750; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+  .winner-tile .score { font-size: 54px; font-weight: 750; line-height: 1; }
+  .winner-tile .of { font-size: 14px; color: var(--muted); }
+  .winner-tile p { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
+
+  .barchart { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 26px 28px; }
+  .barchart .chart-title { font-size: 14px; font-weight: 650; margin: 0 0 4px; }
+  .barchart .chart-sub { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+  .barrow { display: grid; grid-template-columns: 96px 1fr 128px; gap: 12px; align-items: center; padding: 9px 0; }
+  .barrow + .barrow { border-top: 1px solid var(--grid); }
+  .barrow .plat { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .track { height: 18px; background: none; position: relative; }
+  .track::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--baseline); }
+  .fill { height: 100%; border-radius: 0 4px 4px 0; min-width: 3px; }
+  .barrow .val { font-size: 14px; text-align: left; display: flex; align-items: baseline; gap: 8px; }
+  .barrow .val b { font-weight: 700; }
+  .delta { font-size: 12px; color: var(--muted); }
+  .delta.up { color: var(--good-text); }
+
+  /* ---------- methodology ---------- */
+  .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 760px) { .pipeline { grid-template-columns: 1fr 1fr; } }
+  .step {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 18px;
+  }
+  .step .k { font-size: 12px; color: var(--muted); font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
+  .step h3 { margin: 6px 0 8px; font-size: 16px; font-weight: 700; }
+  .step p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+  .method-note { margin: 22px 0 0; font-size: 14px; color: var(--ink-2); max-width: 74ch; }
+
+  /* ---------- heatmap ---------- */
+  .heat-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 26px 28px; }
+  table.heat { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 640px; }
+  table.heat th { font-size: 12.5px; font-weight: 650; text-align: left; padding: 6px 10px; color: var(--ink-2); }
+  table.heat th.colhead { text-align: center; color: var(--ink); }
+  table.heat th .w { display: block; font-size: 11px; color: var(--muted); font-weight: 500; }
+  table.heat td {
+    text-align: center; padding: 9px 6px; font-size: 13.5px; font-weight: 650;
+    border-radius: 4px; min-width: 86px;
+  }
+  td.c4  { background: var(--seq-200); color: #0b0b0b; }
+  td.c5  { background: var(--seq-250); color: #0b0b0b; }
+  td.c6  { background: var(--seq-300); color: #0b0b0b; }
+  td.c7  { background: var(--seq-350); color: #0b0b0b; }
+  td.c8  { background: var(--seq-450); color: #ffffff; }
+  td.c9  { background: var(--seq-550); color: #ffffff; }
+  td.c10 { background: var(--seq-650); color: #ffffff; }
+  .heat-legend { display: flex; align-items: center; gap: 8px; margin-top: 16px; font-size: 12px; color: var(--muted); }
+  .heat-legend .ramp { display: flex; height: 10px; border-radius: 3px; overflow: hidden; }
+  .heat-legend .ramp i { width: 22px; }
+  .footnote { font-size: 13px; color: var(--muted); margin-top: 14px; }
+
+  /* ---------- platform cards ---------- */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 24px; border-top: 3px solid var(--pc, var(--grid)); }
+  .card .rank { font-size: 12px; color: var(--muted); font-weight: 650; letter-spacing: 0.1em; text-transform: uppercase; }
+  .card .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 14px; }
+  .card .head h3 { margin: 0; font-size: 21px; font-weight: 750; }
+  .card .head .total { font-size: 21px; font-weight: 750; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 22px; padding: 12px 0; border-top: 1px solid var(--grid); border-bottom: 1px solid var(--grid); margin-bottom: 14px; }
+  .stats div { font-size: 13px; color: var(--ink-2); }
+  .stats b { display: block; font-size: 15px; color: var(--ink); font-weight: 700; }
+  .card ul { margin: 0; padding-left: 18px; font-size: 14px; color: var(--ink-2); }
+  .card li { margin: 5px 0; }
+  .card li::marker { color: var(--muted); }
+  .card .plus li::marker { content: "+ "; color: var(--good-text); font-weight: 700; }
+  .card .minus li::marker { content: "− "; color: var(--muted); font-weight: 700; }
+  .card h4 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; font-weight: 650; }
+
+  /* ---------- caveats & repro ---------- */
+  .caveats { max-width: 76ch; }
+  .caveats ol { padding-left: 20px; margin: 0; color: var(--ink-2); font-size: 15px; }
+  .caveats li { margin: 10px 0; }
+  .caveats b { color: var(--ink); }
+  pre {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 10px;
+    padding: 18px 22px; overflow-x: auto; font-size: 13px; line-height: 1.7; margin: 0;
+  }
+  footer { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+</style>
+
+<main>
+  <header>
+    <p class="eyebrow">Empirical benchmark · read APIs · July 27, 2026 · rev 2 — all four platforms tested live</p>
+    <h1>Which agent-observability platform gives your data back?</h1>
+    <p class="standfirst">
+      Four platforms ingested identical traces from the same instrumented agents — a raw Anthropic
+      call, a tool-calling agent, and an MCP agent. Then we turned around and tried to get every
+      byte back out through each platform's read API, scoring only what
+      <strong>live responses proved</strong>. Documented-but-untested capabilities earned nothing.
+    </p>
+  </header>
+
+  <section>
+    <h2>Verdict</h2>
+    <div class="verdict-grid">
+      <div class="winner-tile">
+        <span class="label">Winner</span>
+        <span class="name"><i class="swatch" style="background:var(--s-logfire)"></i>Logfire</span>
+        <span class="score num">96.40</span>
+        <span class="of">weighted total / 100</span>
+        <p>Arbitrary SQL over raw spans, the only platform returning gen_ai.* semantic conventions
+           verbatim, and four export formats actually delivered — top marks on 7 of 9 criteria.</p>
+      </div>
+      <div class="barchart">
+        <p class="chart-title">Weighted total score</p>
+        <p class="chart-sub">3 judges × 9 criteria, weights sum to 100 · higher is better</p>
+        <div class="barrow">
+          <span class="plat"><i class="swatch" style="background:var(--s-logfire)"></i>Logfire</span>
+          <div class="track"><div class="fill" style="width:96.4%;background:var(--s-logfire)"></div></div>
+          <span class="val num"><b>96.40</b> <span class="delta up">was blocked in rev 1</span></span>
+        </div>
+        <div class="barrow">
+          <span class="plat"><i class="swatch" style="background:var(--s-braintrust)"></i>Braintrust</span>
+          <div class="track"><div class="fill" style="width:89.4%;background:var(--s-braintrust)"></div></div>
+          <span class="val num"><b>89.40</b></span>
+        </div>
+        <div class="barrow">
+          <span class="plat"><i class="swatch" style="background:var(--s-langsmith)"></i>LangSmith</span>
+          <div class="track"><div class="fill" style="width:80.93%;background:var(--s-langsmith)"></div></div>
+          <span class="val num"><b>80.93</b></span>
+        </div>
+        <div class="barrow">
+          <span class="plat"><i class="swatch" style="background:var(--s-langfuse)"></i>Langfuse</span>
+          <div class="track"><div class="fill" style="width:72.03%;background:var(--s-langfuse)"></div></div>
+          <span class="val num"><b>72.03</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How the benchmark ran</h2>
+    <div class="pipeline">
+      <div class="step">
+        <span class="k">Phase 1</span>
+        <h3>Research</h3>
+        <p>Two independent sweeps — industry evaluation practice and OTel GenAI semantic
+           conventions — synthesized into a 9-criterion rubric with weights summing to 100.</p>
+      </div>
+      <div class="step">
+        <span class="k">Phase 2</span>
+        <h3>Executable tests</h3>
+        <p>One standalone Python script per platform (<code>evaluation/eval_*.py</code>) exercising
+           the live read API: completeness checklist, filters, aggregation, pagination, formats,
+           latency, write-to-read lag.</p>
+      </div>
+      <div class="step">
+        <span class="k">Phase 3</span>
+        <h3>Adversarial verify</h3>
+        <p>A separate agent re-ran every script from scratch, curl-checked sampled claims, and
+           hunted for fabricated metrics. All four results reproduced; one best-case outlier
+           corrected (Logfire ingest lag 1.6 s → 5.0 s).</p>
+      </div>
+      <div class="step">
+        <span class="k">Phase 4</span>
+        <h3>Judge panel</h3>
+        <p>Three judges — data-engineer, platform-operator, AI-engineer lenses — scored the same
+           evidence independently; near-unanimous agreement, no split over one point.</p>
+      </div>
+    </div>
+    <p class="method-note">
+      Scoring rule: for each platform and criterion, judge scores (0–10) are averaged, then the
+      weighted total is <code>Σ weight × avg / 10</code>. Capabilities that exist in docs but were
+      not demonstrated live were capped — the benchmark measures what an engineer actually gets
+      today, from code, with ordinary credentials. Rev 2 re-ran the full pipeline after a
+      read-scope API key for Logfire became available; the other platforms' tests were replayed
+      from the verified rev 1 evidence.
+    </p>
+  </section>
+
+  <section>
+    <h2>Score heatmap — judge-averaged, 0–10</h2>
+    <div class="heat-wrap">
+      <table class="heat">
+        <thead>
+          <tr>
+            <th>Criterion <span style="font-weight:500;color:var(--muted)">(weight)</span></th>
+            <th class="colhead">Logfire</th>
+            <th class="colhead">Braintrust</th>
+            <th class="colhead">LangSmith</th>
+            <th class="colhead">Langfuse</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th>Trace completeness <span class="w">weight 25</span></th>
+            <td class="c10 num" title="All 10 checklist fields, span count 11 on tools trace">10.0</td>
+            <td class="c10 num" title="All 10 checklist fields present">10.0</td>
+            <td class="c10 num" title="All 10 checklist fields present">10.0</td>
+            <td class="c10 num" title="All 10 checklist fields present">10.0</td></tr>
+          <tr><th>Query flexibility <span class="w">weight 20</span></th>
+            <td class="c10 num" title="Arbitrary SQL over records: joins, aggregations, expressions — all live">10.0</td>
+            <td class="c10 num" title="BTQL: filters + grouped aggregation + free query language, all live">10.0</td>
+            <td class="c7 num" title="Filter DSL + /runs/stats; no free SQL (probe 400)">7.3</td>
+            <td class="c7 num" title="Filters + Metrics API; fixed 8 measures only">7.0</td></tr>
+          <tr><th>DX &amp; error quality <span class="w">weight 10</span></th>
+            <td class="c8 num" title="400 with DataFusion parser error; strict 422 for missing min_timestamp; Arrow-by-default surprise">8.0</td>
+            <td class="c8 num" title="400 with parser position + expected tokens">8.0</td>
+            <td class="c6 num" title="Generic 'Unable to parse filter'; name→UUID resolution step">5.7</td>
+            <td class="c7 num" title="Structured field-level 400">7.3</td></tr>
+          <tr><th>Auth &amp; access <span class="w">weight 8</span></th>
+            <td class="c10 num" title="Single Bearer API key with read scope, first try">10.0</td>
+            <td class="c10 num" title="Single Bearer key, first try">10.0</td>
+            <td class="c9 num" title="Works; project-name→UUID resolution step">9.0</td>
+            <td class="c10 num" title="HTTP Basic, everything open">10.0</td></tr>
+          <tr><th>Retrieval latency <span class="w">weight 8</span></th>
+            <td class="c8 num" title="median 372 ms">8.0</td>
+            <td class="c8 num" title="median 334 ms">8.0</td>
+            <td class="c8 num" title="median ~500 ms">8.0</td>
+            <td class="c4 num" title="median 783 ms, variable 599–1847 ms">4.0</td></tr>
+          <tr><th>Pagination <span class="w">weight 8</span></th>
+            <td class="c10 num" title="SQL windowing; second page fetched">10.0</td>
+            <td class="c10 num" title="Cursor; second page fetched">10.0</td>
+            <td class="c10 num" title="Cursor; second page fetched">10.0</td>
+            <td class="c6 num" title="Offset page/limit only">6.0</td></tr>
+          <tr><th>Export formats <span class="w">weight 8</span></th>
+            <td class="c10 num" title="JSON, NDJSON, CSV and Arrow all actually received">10.0</td>
+            <td class="c5 num" title="JSON only received">5.0</td>
+            <td class="c5 num" title="JSON only; Parquet export plan-gated">5.0</td>
+            <td class="c5 num" title="JSON only; CSV Accept ignored">5.0</td></tr>
+          <tr><th>Time to queryable <span class="w">weight 8</span></th>
+            <td class="c10 num" title="5.0 s write-to-read (verifier-corrected)">10.0</td>
+            <td class="c10 num" title="0.4 s write-to-read">10.0</td>
+            <td class="c10 num" title="2.9 s">10.0</td>
+            <td class="c4 num" title="45.9 s">4.0</td></tr>
+          <tr><th>OTel fidelity <span class="w">weight 5</span></th>
+            <td class="c10 num" title="gen_ai.* semconv keys verbatim: input/output messages, tool call args/results, usage — plus W3C IDs">10.0</td>
+            <td class="c4 num" title="Proprietary span_attributes; no gen_ai.* keys">4.0</td>
+            <td class="c4 num" title="IDs remapped to padded UUIDs">4.0</td>
+            <td class="c5 num" title="W3C-style 32-hex trace IDs retrievable">5.0</td></tr>
+        </tbody>
+      </table>
+      <div class="heat-legend">
+        <span>0</span>
+        <span class="ramp"><i style="background:var(--seq-100)"></i><i style="background:var(--seq-200)"></i><i style="background:var(--seq-300)"></i><i style="background:var(--seq-400)"></i><i style="background:var(--seq-500)"></i><i style="background:var(--seq-650)"></i></span>
+        <span>10</span>
+      </div>
+      <p class="footnote">Hover any cell for the evidence behind the score. Full per-judge scores:
+        <code>evaluation/results/final_scores.json</code>.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Platform detail</h2>
+    <div class="cards">
+      <div class="card" style="--pc: var(--s-logfire)">
+        <span class="rank">Rank 1 · winner</span>
+        <div class="head"><h3>Logfire</h3><span class="total num">96.40</span></div>
+        <div class="stats">
+          <div>Median latency<b class="num">372 ms</b></div>
+          <div>Write-to-read<b class="num">5.0 s</b></div>
+          <div>Formats received<b class="num">4</b></div>
+        </div>
+        <h4>What the tests proved</h4>
+        <ul class="plus">
+          <li>Arbitrary SQL over raw spans (<code>records</code> table): expressions, aggregations, windowing — the most powerful query surface of the field, all demonstrated live.</li>
+          <li>Only platform returning <b>gen_ai.* semantic conventions verbatim</b>: input/output messages, tool call args and results, usage, W3C trace IDs.</li>
+          <li>Four export formats actually received: JSON, NDJSON, CSV, Arrow.</li>
+        </ul>
+        <h4>Where it lost points</h4>
+        <ul class="minus">
+          <li>Returns Arrow binary unless you send <code>Accept: application/json</code> explicitly — docs say JSON is the default.</li>
+          <li>Strict 422 on missing <code>min_timestamp</code>; rate limits undocumented.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="--pc: var(--s-braintrust)">
+        <span class="rank">Rank 2</span>
+        <div class="head"><h3>Braintrust</h3><span class="total num">89.40</span></div>
+        <div class="stats">
+          <div>Median latency<b class="num">334 ms</b></div>
+          <div>Write-to-read<b class="num">0.4 s</b></div>
+          <div>Completeness<b class="num">10/10 fields</b></div>
+        </div>
+        <h4>What the tests proved</h4>
+        <ul class="plus">
+          <li>BTQL free query language live: attribute filters and grouped aggregations, curl-verified.</li>
+          <li>Fastest ingest of the field (0.4 s write-to-read) and tight, stable latency.</li>
+          <li>Malformed BTQL returns a 400 with parser position and expected-token list.</li>
+        </ul>
+        <h4>Where it lost points</h4>
+        <ul class="minus">
+          <li>JSON only — ndjson/csv/parquet Accept probes ignored.</li>
+          <li>Proprietary span schema: no gen_ai.* keys or W3C IDs on the read path.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="--pc: var(--s-langsmith)">
+        <span class="rank">Rank 3</span>
+        <div class="head"><h3>LangSmith</h3><span class="total num">80.93</span></div>
+        <div class="stats">
+          <div>Median latency<b class="num">~500 ms</b></div>
+          <div>Write-to-read<b class="num">2.9 s</b></div>
+          <div>Completeness<b class="num">10/10 fields</b></div>
+        </div>
+        <h4>What the tests proved</h4>
+        <ul class="plus">
+          <li>Exact completeness reproduction (tokens 981/183, cost $0.005688, span count 7).</li>
+          <li>Expressive function-style filter DSL plus <code>/runs/stats</code> server-side aggregation.</li>
+          <li>Cursor pagination verified with a real second page; excellent freshness.</li>
+        </ul>
+        <h4>Where it lost points</h4>
+        <ul class="minus">
+          <li>No free SQL; generic parse errors; project-name→UUID resolution step.</li>
+          <li>10 req/10 s rate limit; Parquet bulk export plan-gated and untested by rule.</li>
+          <li>IDs remapped to padded UUIDs — weakest OTel fidelity with Braintrust.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="--pc: var(--s-langfuse)">
+        <span class="rank">Rank 4</span>
+        <div class="head"><h3>Langfuse</h3><span class="total num">72.03</span></div>
+        <div class="stats">
+          <div>Median latency<b class="num">783 ms</b></div>
+          <div>Write-to-read<b class="num">45.9 s</b></div>
+          <div>Completeness<b class="num">10/10 fields</b></div>
+        </div>
+        <h4>What the tests proved</h4>
+        <ul class="plus">
+          <li>Full completeness on the tools trace (span count 8, cost $0.010347).</li>
+          <li>Simplest auth of the field: HTTP Basic, every endpoint open, no gating.</li>
+          <li>Structured field-level 400 on the malformed call; W3C-style trace IDs retrievable.</li>
+        </ul>
+        <h4>Where it lost points</h4>
+        <ul class="minus">
+          <li>45.9 s ingest lag — painful for write-then-verify agent loops.</li>
+          <li>Offset-only pagination; Metrics API limited to 8 fixed measures.</li>
+          <li>Slowest and most variable latency (599–1847 ms samples).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="caveats">
+    <h2>Caveats — read before quoting</h2>
+    <ol>
+      <li><b>Credentials decide benchmarks.</b> In rev 1 Logfire scored 6.67 — dead last — because
+          only a write token existed and its query API correctly rejected it. One read-scope API
+          key later it leads the field at 96.40. The evidence-only rule cuts both ways.</li>
+      <li><b>Export formats:</b> Logfire is the only platform that honored content negotiation;
+          Braintrust, LangSmith and Langfuse all returned JSON regardless of Accept headers.
+          LangSmith's Parquet bulk export exists but is plan-gated and untested by rule.</li>
+      <li><b>OTel fidelity is rare:</b> only Logfire surfaced gen_ai.* semantic conventions
+          verbatim on the read path; the other three reshape telemetry into proprietary schemas.</li>
+      <li><b>Judge panels have noise:</b> re-scoring the identical rev 1 evidence moved other
+          platforms' totals by up to ±2 points (e.g. Braintrust 90.57 → 89.40). Differences
+          smaller than that are not meaningful; the ordering was stable within each panel.</li>
+      <li><b>Latency shared one network but not one moment;</b> Langfuse and LangSmith showed
+          run-to-run variance up to ~1.8 s, Braintrust and Logfire were tight and stable.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Reproduce it</h2>
+    <pre><code># each test is a standalone script; results land in evaluation/results/*.json
+cd evaluation
+set -a && source ../logfire/.env && set +a     # needs LOGFIRE_READ_TOKEN (read-scope API key)
+uv run --with requests python eval_logfire.py
+
+# same pattern: eval_braintrust.py, eval_langsmith.py, eval_langfuse.py
+# full methodology and score tables: evaluation/RESULTS.md
+# raw judge scores and weights:      evaluation/results/final_scores.json</code></pre>
+  </section>
+
+  <footer>
+    <span>agents_otel_data · empirical read-API benchmark · 15 agents, 3 judges, evidence-only scoring · rev 2</span>
+    <span>2026-07-27</span>
+  </footer>
+</main>

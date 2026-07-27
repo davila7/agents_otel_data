@@ -1,0 +1,66 @@
+{
+  "platform": "braintrust",
+  "notes": {
+    "retrieval_latency_all_ms": [
+      335.4,
+      382.1,
+      335.5
+    ],
+    "traces_found": {
+      "01_messages": true,
+      "02_tools": true,
+      "03_mcp": true
+    },
+    "example_llm_cost_usd": 0.005379,
+    "completeness_trace_used": "02_tools",
+    "aggregation_sample": [
+      {
+        "avg_tokens": null,
+        "n": 5,
+        "t": "task"
+      },
+      {
+        "avg_tokens": 549.125,
+        "n": 8,
+        "t": "llm"
+      },
+      {
+        "avg_tokens": null,
+        "n": 6,
+        "t": "tool"
+      }
+    ]
+  },
+  "auth_works": true,
+  "retrieval_latency_ms": 335.5,
+  "completeness": {
+    "llm_input": true,
+    "llm_output": true,
+    "model_name": true,
+    "token_usage": true,
+    "cost_usd": true,
+    "latency_per_span": true,
+    "tool_call_args": true,
+    "tool_call_results": true,
+    "span_tree": true,
+    "span_count_tools_trace": 7
+  },
+  "query_flexibility": {
+    "filter_by_time": true,
+    "filter_by_name_or_attribute": true,
+    "aggregation": true,
+    "free_sql_or_dsl": true
+  },
+  "pagination": {
+    "mechanism": "cursor",
+    "second_page_verified": true
+  },
+  "export_formats": {
+    "json": true,
+    "ndjson": false,
+    "csv": false,
+    "parquet": false
+  },
+  "time_to_queryable_s": 0.4,
+  "dx_friction": "Auth is a single Bearer API key; the REST fetch endpoint worked on the first try with just the project id. BTQL (pipe syntax) is powerful but its docs require reading examples to get dimensions/measures right. Malformed query returned HTTP 400 with message: '{\"Code\":\"BadRequestError\",\"Message\":\"Invalid query: Error: Parse error: Failed to parse query (expected \\'dimensions, grouping_sets, rollup, final_dimensions, pivot, unpivot, measures, final_measures, ' - error messages include parser position, which is helpful."
+}
