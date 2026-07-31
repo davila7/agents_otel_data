@@ -120,6 +120,31 @@ The only platform to score 10 on query flexibility, export formats, and OTel fid
 
 Logfire wins on the two heaviest criteria plus every openness signal: it ties everyone on completeness (all four platforms returned the full agent story), but it is one of only two platforms with a free query language (weight 20), and it is the **only** platform with real multi-format export (4 formats including columnar Arrow) and verbatim gen_ai.*/W3C-ID passthrough on the read path. Braintrust is a strong runner-up — matching Logfire on query power and beating it on freshness (0.4 s vs 5.0 s) — but loses ground on export formats (JSON-only) and its proprietary span schema. LangSmith is held back by no free query language, the weakest malformed-query error, and plan-gated bulk export. Langfuse, despite perfect completeness, is penalized by the slowest latency, a 46.5 s ingest lag, offset pagination, and a whitelisted metrics API.
 
+## Sensitivity Check: Continuous Scoring for Measured Metrics
+
+A fair critique of the ranking above: latency and freshness were scored in **bands** ("300–600 ms = 8 pts", "< 10 s = 10 pts"), which collapsed real quantitative gaps into ties — Braintrust's 0.4 s write-to-read ingest is 12.5× faster than Logfire's 5.0 s, yet both scored 10/10. Under banded scoring, the entire 7.0-point Logfire–Braintrust gap came from just two categorical criteria (export-formats and otel-fidelity).
+
+[`rescore_continuous.py`](./rescore_continuous.py) re-scores those two metrics continuously — log-scale, normalized within the cohort (best observed = 10, worst = 0) — while the other 7 criteria keep the judge averages. Output: [`results/final_scores_continuous.json`](./results/final_scores_continuous.json).
+
+| Platform | Banded total | Continuous total | Retrieval latency | Write-to-read |
+|----------|-------------:|-----------------:|------------------:|--------------:|
+| Logfire | 96.40 | **93.14** | 372.1 ms | 5.0 s |
+| Braintrust | 89.40 | **91.00** | 335.5 ms | 0.4 s |
+| LangSmith | 80.93 | **76.46** | 464.3 ms | 4.7 s |
+| Langfuse | 72.03 | **65.63** | 1293.1 ms | 46.5 s |
+
+**What this shows — and what it doesn't.** Logfire ranks first under every scoring scheme tested; what changes with the method is the *size* of its lead over Braintrust:
+
+| Scoring scheme | Logfire–Braintrust gap |
+|----------------|-----------------------:|
+| Banded rubric (original) | 7.00 |
+| Continuous, linear min-max | 5.90 |
+| Continuous, log-scale (this table) | 2.14 |
+
+The log transform is the most Braintrust-favorable reasonable choice (it stretches the scale near Braintrust's 0.4 s best), so the honest summary is: **the ranking is transform-robust; the gap magnitude is method-dependent (~2–7 points)**. Logfire leads on data openness (export formats, verbatim OTEL attributes); Braintrust leads on speed (ingest freshness, retrieval latency). LangSmith and Langfuse drop under any continuous scheme because the bands were cushioning their slower measurements.
+
+Two disclosures that bound the precision of the continuous numbers: Logfire's 5.0 s freshness is a **single sample** (an earlier 1.6 s reading was discarded by the verifier; using it instead would widen the gap to ~4 points), and cohort min-max normalization is **cohort-dependent** — the scale is stretched by Langfuse's 46.5 s outlier, and the worst platform is forced to 0 by construction.
+
 ## Caveats
 
 - **This report supersedes an earlier draft** in which Logfire was largely untestable; the final judge scores below are based on a successful fresh run where every Logfire read-path capability was exercised and reproduced.

@@ -11,9 +11,9 @@ Every platform folder is a self-contained `uv` project running the same three sc
 | 🥇 | [Logfire](./logfire) (Pydantic) | **96.40** | Arbitrary SQL over raw spans, `gen_ai.*` semantic conventions returned verbatim, 4 export formats actually delivered (JSON/NDJSON/CSV/Arrow) |
 | 🥈 | [Braintrust](./braintrust) | 89.40 | BTQL free query language, fastest ingest (0.4 s write-to-read), best error messages |
 | 🥉 | [LangSmith](./langsmith) | 80.93 | Full trace completeness, cursor pagination, but no free SQL and strict rate limits |
-| 4 | [Langfuse](./langfuse) | 72.03 | Simplest auth and full completeness, but 45.9 s ingest lag and offset-only pagination |
+| 4 | [Langfuse](./langfuse) | 72.03 | Simplest auth and full completeness, but 46.5 s ingest lag and offset-only pagination |
 
-Full methodology, rubric, per-judge scores, and caveats: [`evaluation/RESULTS.md`](./evaluation/RESULTS.md). One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
+Full methodology, rubric, per-judge scores, and caveats: [`evaluation/RESULTS.md`](./evaluation/RESULTS.md). Note the [continuous-scoring sensitivity check](./evaluation/RESULTS.md#sensitivity-check-continuous-scoring-for-measured-metrics): the banded rubric flattened Braintrust's measured wins (0.4 s vs 5.0 s ingest). Logfire ranks first under every scoring scheme tested, but the size of its lead over Braintrust is method-dependent — from 7.0 points (banded) down to 2.1 (log-continuous) — with Logfire ahead on data openness and Braintrust ahead on speed. One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
 
 ## How the benchmark works
 
