@@ -6,16 +6,21 @@ Every platform folder is a self-contained `uv` project running the same three sc
 
 ## The verdict
 
+Latest results (August 2026 — all four read APIs measured back-to-back in the same session, continuous scoring):
+
 | Rank | Platform | Score / 100 | What decided it |
 |------|----------|------------:|-----------------|
-| 🥇 | [Logfire](./logfire) (Pydantic) | **96.40** | Arbitrary SQL over raw spans, `gen_ai.*` semantic conventions returned verbatim, 4 export formats actually delivered (JSON/NDJSON/CSV/Arrow) |
-| 🥈 | [Braintrust](./braintrust) | 89.40 | BTQL free query language, fastest ingest (0.4 s write-to-read), best error messages |
-| 🥉 | [LangSmith](./langsmith) | 80.93 | Full trace completeness, cursor pagination, but no free SQL and strict rate limits |
-| 4 | [Langfuse](./langfuse) | 72.03 | Simplest auth and full completeness, but 46.5 s ingest lag and offset-only pagination |
+| 🥇 | [Logfire](./logfire) (Pydantic) | **88.73** | Arbitrary SQL over raw spans, `gen_ai.*` semantic conventions returned verbatim, 4 export formats actually delivered (JSON/NDJSON/CSV/Arrow) |
+| 🥈 | [Braintrust](./braintrust) | 88.36 | BTQL free query language, fastest ingest (0.4 s write-to-read), best error messages |
+| 🥉 | [Langfuse](./langfuse) | 80.83 | Fastest retrieval (202 ms) since its observations v2 API, cursor pagination, verbatim `gen_ai.*`; held back by ~6–21 s ingest lag and JSON-only export |
+| 4 | [LangSmith](./langsmith) | 73.99 | Full trace completeness and cursor pagination, but no free query language and the slowest retrieval of the August session |
 
-Full methodology, rubric, per-judge scores, and caveats: [`evaluation/RESULTS.md`](./evaluation/RESULTS.md). Note the [continuous-scoring sensitivity check](./evaluation/RESULTS.md#sensitivity-check-continuous-scoring-for-measured-metrics): the banded rubric flattened Braintrust's measured wins (0.4 s vs 5.0 s ingest). Logfire ranks first under every scoring scheme tested, but the size of its lead over Braintrust is method-dependent — from 7.0 points (banded) down to 2.1 (log-continuous) — with Logfire ahead on data openness and Braintrust ahead on speed.
+Key facts behind the numbers:
 
-**August 2026 update:** at the Langfuse team's request the benchmark was re-run against their new [observations v2 API](./evaluation/RESULTS.md#august-2026-re-run-langfuse-observations-v2) with real-time ingestion. The improvements are real and large: retrieval latency 1293 → 202 ms (now fastest in the cohort), ingest lag 46.5 → 10.7 s, cursor pagination, and verbatim `gen_ai.*` attributes on the read path. Langfuse moves from a distant 4th to 3rd (continuous score 65.6 → 80.8); the table above remains the frozen July record. One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
+- **Logfire vs Braintrust is now a 0.4-point race.** Logfire leads on data openness (free SQL, 4 export formats), Braintrust on speed (0.4 s write-to-read). The gap between them is method-dependent (~0.4–7 points across scoring schemes); the *ranking* is what has stayed stable.
+- **Langfuse made the biggest jump** — from a distant 4th (65.63) to 3rd after shipping its [observations v2 API](./evaluation/RESULTS.md#august-2026-re-run-langfuse-observations-v2): retrieval latency 1293 → 202 ms, ingest lag 46.5 → ~10 s, offset → cursor pagination.
+- The original July judge-panel scores (Logfire 96.40, Braintrust 89.40, LangSmith 80.93, Langfuse 72.03) remain the frozen record in [`evaluation/RESULTS.md`](./evaluation/RESULTS.md), together with the full methodology, rubric, per-judge scores, [sensitivity checks](./evaluation/RESULTS.md#sensitivity-check-continuous-scoring-for-measured-metrics), and caveats.
+- One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
 
 ## How the benchmark works
 
