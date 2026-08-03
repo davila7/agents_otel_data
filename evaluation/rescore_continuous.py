@@ -13,21 +13,60 @@ The other 7 criteria keep the judge-panel averages from final_scores.json.
 
 Reads  results/*.json + results/final_scores.json
 Writes results/final_scores_continuous.json
+
+With --cohort aug2026 it instead scores the August 2026 same-session re-run
+(triggered by Langfuse shipping observations v2 + real-time ingestion):
+measured values come from results/*_aug2026.json / langfuse_v2.json, and
+Langfuse's categorical criteria that verifiably changed on the v2 API are
+overridden (pagination: cursor second-page fetched -> 10; otel-fidelity:
+verbatim gen_ai.* keys + W3C 32-hex trace ids -> 9; query-flex: advanced
+JSON filter honored, still no free SQL -> 8; export unchanged at 5). These
+overrides are mechanical applications of the rubric anchors to captured
+responses, not a fresh judge panel — flagged as provisional in RESULTS.md.
+Writes results/final_scores_continuous_aug2026.json
 """
 
 import json
 import math
+import sys
 from pathlib import Path
 
 RESULTS = Path(__file__).parent / "results"
 CONTINUOUS = ["latency", "freshness"]
+
+COHORTS = {
+    "jul2026": {
+        "files": {p: f"{p}.json" for p in ["logfire", "braintrust", "langsmith", "langfuse"]},
+        "overrides": {},
+        "out": "final_scores_continuous.json",
+    },
+    "aug2026": {
+        "files": {
+            "logfire": "logfire_aug2026.json",
+            "braintrust": "braintrust_aug2026.json",
+            "langsmith": "langsmith_aug2026.json",
+            "langfuse": "langfuse_v2.json",
+        },
+        # rubric-anchor re-scores for langfuse capabilities that changed on v2,
+        # each traceable to a captured response in langfuse_v2.json
+        "overrides": {"langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8}},
+        "out": "final_scores_continuous_aug2026.json",
+    },
+}
+
+cohort_name = "jul2026"
+if len(sys.argv) == 3 and sys.argv[1] == "--cohort":
+    cohort_name = sys.argv[2]
+elif len(sys.argv) != 1:
+    sys.exit("usage: rescore_continuous.py [--cohort jul2026|aug2026]")
+cohort = COHORTS[cohort_name]
 
 final = json.loads((RESULTS / "final_scores.json").read_text())
 weights = final["weights"]
 
 raw = {}
 for name in final["platforms"]:
-    d = json.loads((RESULTS / f"{name}.json").read_text())
+    d = json.loads((RESULTS / cohort["files"][name]).read_text())
     m = d.get("metrics", d)  # logfire nests under "metrics", others are flat
     raw[name] = {
         "latency": m["retrieval_latency_ms"],
@@ -48,8 +87,11 @@ cont = {c: log_scores({p: raw[p][c] for p in raw}) for c in CONTINUOUS}
 
 out = {
     "method": {
+        "cohort": cohort_name,
+        "measurement_files": cohort["files"],
         "continuous_criteria": CONTINUOUS,
         "scoring": "10 * log(worst/value) / log(worst/best); other criteria keep judge averages",
+        "categorical_overrides": cohort["overrides"],
         "raw_inputs": raw,
     },
     "weights": weights,
@@ -58,6 +100,7 @@ out = {
 
 for name, data in final["platforms"].items():
     avgs = dict(data["criterion_averages"])
+    avgs.update(cohort["overrides"].get(name, {}))
     for c in CONTINUOUS:
         avgs[c] = cont[c][name]
     contrib = {c: weights[c] * avgs[c] / 10 for c in avgs}
@@ -75,7 +118,7 @@ out["ranking"] = [
 ]
 out["winner"] = ranking[0][0]
 
-(RESULTS / "final_scores_continuous.json").write_text(json.dumps(out, indent=2) + "\n")
+(RESULTS / cohort["out"]).write_text(json.dumps(out, indent=2) + "\n")
 
 print(f"{'platform':<12} {'banded':>7} {'continuous':>11}  latency(ms)  freshness(s)")
 for p, d in ranking:

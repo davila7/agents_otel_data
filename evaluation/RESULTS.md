@@ -145,6 +145,43 @@ The log transform is the most Braintrust-favorable reasonable choice (it stretch
 
 Two disclosures that bound the precision of the continuous numbers: Logfire's 5.0 s freshness is a **single sample** (an earlier 1.6 s reading was discarded by the verifier; using it instead would widen the gap to ~4 points), and cohort min-max normalization is **cohort-dependent** — the scale is stretched by Langfuse's 46.5 s outlier, and the worst platform is forced to 0 by construction.
 
+## August 2026 Re-run: Langfuse Observations v2
+
+After the July results were published, the Langfuse team reached out: they had shipped major read-path improvements (the [observations v2 API](https://langfuse.com/docs/api-and-data-platform/features/observations-api) with cursor pagination and selective field groups, plus real-time ingestion in the v4 data model) and asked for a re-run. Since our demos use the Python SDK (v4.14.2), no ingestion header changes were needed. `eval_langfuse.py` was rewritten against `GET /api/public/v2/observations`; the July v1-API evidence stays frozen in `results/langfuse.json`, and the re-run writes `results/langfuse_v2.json`.
+
+**What changed for Langfuse** (July v1 API → August v2 API, both live-measured):
+
+| Metric | July (v1) | August (v2) | Rubric effect |
+|--------|-----------|-------------|---------------|
+| Retrieval latency | 1293.1 ms | **202.5 ms** — fastest in cohort | band 4 → 10 |
+| Write-to-read lag | 46.5 s | **10.7 s** | band 4 → 8 |
+| Pagination | offset (page/limit) | **cursor** (`meta.cursor`, second page verified, limit 1000) | band 6 → 10 |
+| OTEL fidelity | proprietary schema | **verbatim `attributes.gen_ai.*` keys + W3C 32-hex trace IDs** in metadata | 5 → 9 |
+| Query filters | fixed params | fixed params + **advanced JSON `filter` param (verified honored)**; still no free SQL | 7 → 8 |
+| Completeness / export | 10/10 checklist; JSON only | unchanged (10/10; JSON only) | — |
+
+**Same-session cohort (rubric rule 2).** Comparing August Langfuse numbers against July numbers for the other platforms would break the same-machine/same-session rule, so all four evals were re-run back-to-back on 2026-08-03 (`results/*_aug2026.json`):
+
+| Platform | Latency (median of 3) | Write-to-read |
+|----------|----------------------:|--------------:|
+| Langfuse (v2) | **202.5 ms** | 10.7 s |
+| Braintrust | 374.6 ms | **0.4 s** |
+| Logfire | 413.9 ms | 5.1 s |
+| LangSmith | 1305.2 ms | 0.5 s |
+
+Note the session-to-session variance this exposes: with identical scripts, LangSmith's median latency went 464 → 1305 ms while its ingest lag improved 4.7 → 0.5 s. Single-session medians of three samples are weather, not climate.
+
+**August continuous scores** (`rescore_continuous.py --cohort aug2026` → `results/final_scores_continuous_aug2026.json`; Langfuse's changed categorical criteria re-scored by mechanical application of the rubric anchors to captured v2 responses — pagination 10, otel-fidelity 9, query-flex 8 — all other judge averages retained):
+
+| Platform | July continuous | August continuous |
+|----------|----------------:|------------------:|
+| Logfire | 93.14 | **88.73** |
+| Braintrust | 91.00 | **88.36** |
+| Langfuse | 65.63 | **80.83** |
+| LangSmith | 76.46 | 73.99 |
+
+**What the re-run changes.** Langfuse moves from a distant 4th to 3rd, ~8 points behind a Logfire–Braintrust top pair that is now separated by 0.37 points — the vendor's improvements are real and large. In banded terms Langfuse's provisional re-score is ≈87.2 (from 72.03). Two honesty notes: (1) the categorical re-scores are single-scorer rubric-anchor applications, not a fresh three-judge panel — treated as provisional; (2) Langfuse's 10.7 s freshness, though 4× better than July, is the worst in the August cohort, so cohort min-max assigns it 0 — the banded view (8/10) is kinder and arguably fairer here. The July tables above remain the frozen record of the original evaluation.
+
 ## Caveats
 
 - **This report supersedes an earlier draft** in which Logfire was largely untestable; the final judge scores below are based on a successful fresh run where every Logfire read-path capability was exercised and reproduced.

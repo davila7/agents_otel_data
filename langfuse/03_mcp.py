@@ -20,9 +20,10 @@ assert langfuse.auth_check(), 'Langfuse authentication failed — check .env'
 Agent.instrument_all()
 
 # cryptography is pinned <45 because newer versions need a rust toolchain
-# to build from source on Intel macOS
+# to build from source on Intel macOS; mcp is pinned <2 because
+# mcp-server-time still imports McpError, renamed to MCPError in mcp 2.x
 time_server = MCPToolset(
-    StdioTransport('uvx', args=['--with', 'cryptography<45', 'mcp-server-time'])
+    StdioTransport('uvx', args=['--with', 'cryptography<45', '--with', 'mcp<2', 'mcp-server-time'])
 )
 
 agent = Agent(
