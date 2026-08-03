@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Observability Benchmark</title>
+<meta name="description" content="Four OTEL-based agent observability platforms — Logfire, Braintrust, LangSmith, Langfuse — benchmarked on their read APIs with executable scripts.">
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #222220;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --logfire: #c98500;
+    --braintrust: #3987e5;
+    --langsmith: #d95926;
+    --langfuse: #199e70;
+    --delta-up: #0ca30c;
+    --delta-down: #d03b3b;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ---------- header ---------- */
+  header { padding: 48px 0 28px; }
+  .kicker {
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+  }
+  h1 { font-size: clamp(26px, 5vw, 38px); line-height: 1.15; letter-spacing: -.02em; }
+  .sub { color: var(--ink-2); margin-top: 12px; max-width: 640px; font-size: 15px; }
+  .header-links { margin-top: 14px; font-size: 14px; }
+  a { color: var(--braintrust); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- cohort toggle ---------- */
+  .toggle {
+    display: inline-flex; margin-top: 22px; border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; background: var(--surface);
+  }
+  .toggle button {
+    appearance: none; border: 0; background: transparent; color: var(--ink-2);
+    font: 600 13px/1 system-ui, sans-serif; padding: 10px 16px; cursor: pointer;
+  }
+  .toggle button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); }
+  .toggle button:not(:last-child) { border-right: 1px solid var(--border); }
+  .cohort-note { color: var(--muted); font-size: 13px; margin-top: 10px; }
+
+  /* ---------- sections ---------- */
+  section { margin-top: 44px; }
+  h2 { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+
+  /* ---------- leaderboard ---------- */
+  .lb-row {
+    display: grid; grid-template-columns: 34px 150px 1fr 128px;
+    gap: 14px; align-items: center; padding: 14px 0;
+  }
+  .lb-row + .lb-row { border-top: 1px solid var(--grid); }
+  .lb-rank { color: var(--muted); font: 600 15px/1 var(--mono); }
+  .lb-rank.first { color: var(--ink); }
+  .lb-name { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 0 4px 4px 0; }
+  .lb-score { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .lb-score b { font-size: 17px; }
+  .lb-score .of { color: var(--muted); font-size: 12px; }
+  .delta { font-size: 12px; font-variant-numeric: tabular-nums; margin-left: 6px; }
+  .delta.up { color: var(--delta-up); }
+  .delta.down { color: var(--delta-down); }
+
+  /* ---------- heatmap ---------- */
+  .scroll-x { overflow-x: auto; }
+  table { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 620px; }
+  th, td { font-size: 13px; }
+  thead th { color: var(--ink-2); font-weight: 600; text-align: center; padding: 6px 4px; }
+  thead th:first-child { text-align: left; }
+  tbody th {
+    text-align: left; font-weight: 500; color: var(--ink-2); padding: 0 10px 0 0;
+    white-space: nowrap;
+  }
+  tbody th .w { color: var(--muted); font-size: 11px; margin-left: 5px; font-variant-numeric: tabular-nums; }
+  td.cell {
+    text-align: center; font-variant-numeric: tabular-nums; font-weight: 600;
+    padding: 9px 4px; border-radius: 4px; min-width: 74px; cursor: default;
+  }
+  .ramp-legend { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 12px; }
+  .ramp-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; flex: 0 1 220px; }
+  .ramp-bar i { flex: 1; }
+
+  /* ---------- tooltip ---------- */
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 11px; font-size: 12.5px; color: var(--ink); max-width: 240px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  }
+  #tip .t-head { font-weight: 600; margin-bottom: 2px; }
+  #tip .t-sub { color: var(--ink-2); }
+
+  /* ---------- measurements ---------- */
+  .measure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .measure {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; border-top: 3px solid var(--pc);
+  }
+  .measure .m-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+  .measure dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
+  .measure dt { color: var(--muted); }
+  .measure dd { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-family: var(--mono); font-size: 13px; }
+  .measure .best { color: var(--delta-up); }
+  .m-foot { color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+
+  /* ---------- platform cards ---------- */
+  .plat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .plat-grid { grid-template-columns: 1fr; } }
+  .plat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; border-top: 3px solid var(--pc); }
+  .plat .p-name { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; }
+  .plat code {
+    display: block; font: 12px/1.5 var(--mono); color: var(--ink-2);
+    background: var(--page); border: 1px solid var(--grid); border-radius: 6px;
+    padding: 7px 9px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;
+  }
+  .plat p { font-size: 13.5px; color: var(--ink-2); }
+  .plat p + p { margin-top: 6px; }
+  .plat .lab { font-weight: 600; color: var(--ink); }
+
+  /* ---------- caveats ---------- */
+  .caveats ul { list-style: none; }
+  .caveats li { padding: 10px 0; border-top: 1px solid var(--grid); color: var(--ink-2); font-size: 14px; }
+  .caveats li:first-child { border-top: 0; }
+  .caveats b { color: var(--ink); }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--grid); color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 560px) {
+    .lb-row { grid-template-columns: 24px 1fr 90px; }
+    .lb-track-wrap { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">OTEL read-API benchmark · executable, reproducible</div>
+    <h1>Which agent-observability platform gives your data back?</h1>
+    <p class="sub">The same three traced agent scenarios — a direct Anthropic call, a Pydantic AI agent with tools, and an MCP server over stdio — written into four OTEL-based platforms. Then each platform's <em>read API</em> is benchmarked with executable scripts and scored on 9 weighted criteria.</p>
+    <div class="header-links">
+      <a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a>
+      <span style="color:var(--muted)"> · every number traces to a JSON file in <span style="font-family:var(--mono);font-size:13px">evaluation/results/</span></span>
+    </div>
+    <div class="toggle" role="group" aria-label="Cohort">
+      <button id="btn-aug" aria-pressed="true">Aug 2026 · continuous</button>
+      <button id="btn-jul" aria-pressed="false">Jul 2026 · judge panel</button>
+    </div>
+    <p class="cohort-note" id="cohort-note"></p>
+  </header>
+
+  <section>
+    <h2>Leaderboard</h2>
+    <div class="card" id="leaderboard"></div>
+  </section>
+
+  <section>
+    <h2>Score heatmap — 9 criteria × 4 platforms</h2>
+    <div class="card">
+      <div class="scroll-x"><table id="heatmap"></table></div>
+      <div class="ramp-legend">
+        <span>0</span>
+        <div class="ramp-bar" id="ramp-bar"></div>
+        <span>10</span>
+        <span style="margin-left:8px">score per criterion · weight in parentheses · hover a cell for its weighted contribution</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Raw measurements</h2>
+    <div class="measure-grid" id="measures"></div>
+    <p class="m-foot">Latency = median of 3 timed identical read calls, full HTTP round trip. Freshness = seconds from span emission until it is queryable via the read API. Green marks the best value in the cohort.</p>
+  </section>
+
+  <section>
+    <h2>The four read APIs</h2>
+    <div class="plat-grid">
+      <div class="plat" style="--pc:var(--logfire)">
+        <div class="p-name"><span class="dot" style="background:var(--logfire)"></span>Logfire</div>
+        <code>POST /v2/query · SQL · pylf_v2 read token</code>
+        <p><span class="lab">Strength:</span> full SQL over spans, and the widest export menu (JSON, NDJSON, CSV, Arrow).</p>
+        <p><span class="lab">Friction:</span> returns Arrow binary unless you send <b>Accept: application/json</b>; <b>min_timestamp</b> is required; ~10 queries/min rate limit.</p>
+      </div>
+      <div class="plat" style="--pc:var(--braintrust)">
+        <div class="p-name"><span class="dot" style="background:var(--braintrust)"></span>Braintrust</div>
+        <code>GET /v1/project_logs/{id}/fetch · POST /btql · Bearer</code>
+        <p><span class="lab">Strength:</span> BTQL query language and sub-second freshness (0.4&nbsp;s in both cohorts).</p>
+        <p><span class="lab">Friction:</span> JSON-only export; fetch pagination can re-return rows — dedupe by <b>id</b>.</p>
+      </div>
+      <div class="plat" style="--pc:var(--langsmith)">
+        <div class="p-name"><span class="dot" style="background:var(--langsmith)"></span>LangSmith</div>
+        <code>POST /api/v1/runs/query · X-Api-Key</code>
+        <p><span class="lab">Strength:</span> expressive filter DSL (<b>eq(is_root, true)</b>) and solid cursor pagination.</p>
+        <p><span class="lab">Friction:</span> projects addressed by UUID (resolve names first); 10 req/10&nbsp;s rate limit; Parquet export is plan-gated; slowest read latency in the August cohort.</p>
+      </div>
+      <div class="plat" style="--pc:var(--langfuse)">
+        <div class="p-name"><span class="dot" style="background:var(--langfuse)"></span>Langfuse</div>
+        <code>GET /api/public/v2/observations · HTTP Basic pk/sk</code>
+        <p><span class="lab">Strength:</span> biggest jump July → August (65.63 → 80.83 continuous) after moving to the observations v2 API; fastest read latency in the August cohort (202.5&nbsp;ms).</p>
+        <p><span class="lab">Friction:</span> rows are observations — group by <b>traceId</b> to reconstruct traces; I/O fields need explicit <b>?fields=</b> opt-in; slowest ingest freshness in the August cohort (10.7&nbsp;s).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="caveats">
+    <h2>Read the numbers honestly</h2>
+    <div class="card">
+      <ul>
+        <li><b>The ranking is robust; the top gap is not.</b> Logfire &gt; Braintrust holds across every scoring scheme tried, but the size of the gap is method-dependent (roughly 2–7 points depending on banded vs continuous scoring). Don't read the August 0.37-point margin as a precise measurement.</li>
+        <li><b>Continuous scores are cohort-normalized.</b> Latency and freshness use log-scale min–max within the cohort, so the worst platform gets 0.0 <em>by construction</em>. LangSmith's latency 0.0 means "slowest of these four in this session", not "broken".</li>
+        <li><b>Logfire freshness is a single sample</b> (n=1 per cohort). Treat its freshness score as indicative, not measured.</li>
+        <li><b>July is the frozen record.</b> The judge-panel scores (96.40 / 89.40 / 80.93 / 72.03) were produced once by a 3-judge panel with a banded rubric and are never edited. August is a re-run on the same rubric after Langfuse shipped its v2 API — all four platforms were re-measured back-to-back in one session.</li>
+        <li><b>Small data, single session per cohort.</b> Three traces per platform, one benchmark session per cohort. This measures API ergonomics and behavior, not production-scale performance.</li>
+        <li><b>Credentials decide benchmarks.</b> In the first run Logfire scored 6.67/100 purely because the wrong credential type was provisioned. Every score here was re-verified with working read credentials.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Reproduce it: <span style="font-family:var(--mono)">evaluation/eval_&lt;platform&gt;.py</span> writes <span style="font-family:var(--mono)">results/&lt;platform&gt;.json</span>; <span style="font-family:var(--mono)">rescore_continuous.py</span> recomputes the continuous cohort scores. Rubric, methodology and caveats: <a href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">evaluation/RESULTS.md</a>.
+  </footer>
+</div>
+
+<div id="tip" role="tooltip"></div>
+
+<script>
+// All values transcribed from evaluation/results/*.json — do not edit by hand
+// without tracing each number back to its source file.
+const CRITERIA = [
+  ["completeness", 25], ["query-flex", 20], ["dx-friction", 10],
+  ["auth-access", 8], ["latency", 8], ["pagination", 8],
+  ["export-formats", 8], ["freshness", 8], ["otel-fidelity", 5],
+];
+
+const PLATFORMS = {
+  logfire:    { label: "Logfire",    color: "var(--logfire)" },
+  braintrust: { label: "Braintrust", color: "var(--braintrust)" },
+  langsmith:  { label: "LangSmith",  color: "var(--langsmith)" },
+  langfuse:   { label: "Langfuse",   color: "var(--langfuse)" },
+};
+
+const DATA = {
+  aug: {
+    note: "August 2026 cohort · continuous scoring (final_scores_continuous_aug2026.json): latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep the July judge averages. Deltas compare against July under the same continuous method.",
+    source: "final_scores_continuous_aug2026.json",
+    ranking: ["logfire", "braintrust", "langfuse", "langsmith"],
+    totals:  { logfire: 88.73, braintrust: 88.36, langfuse: 80.83, langsmith: 73.99 },
+    // vs July continuous totals (93.14 / 91.00 / 65.63 / 76.46)
+    deltas:  { logfire: -4.41, braintrust: -2.64, langfuse: +15.20, langsmith: -2.47 },
+    scores: {
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 6.16, "pagination": 10.0, "export-formats": 10.0, "freshness": 2.25, "otel-fidelity": 10.0 },
+      braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 6.70, "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
+      langfuse:   { "completeness": 10.0, "query-flex": 8.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 10.0, "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.0,  "otel-fidelity": 9.0 },
+      langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 5.67, "auth-access": 9.0,  "latency": 0.0,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 9.32, "otel-fidelity": 4.0 },
+    },
+    raw: {
+      logfire:    { latency: 413.9,  freshness: 5.1  },
+      braintrust: { latency: 374.6,  freshness: 0.4  },
+      langfuse:   { latency: 202.5,  freshness: 10.7 },
+      langsmith:  { latency: 1305.2, freshness: 0.5  },
+    },
+  },
+  jul: {
+    note: "July 2026 cohort · frozen 3-judge panel with the banded rubric (final_scores.json). This is the original record; it is never edited.",
+    source: "final_scores.json",
+    ranking: ["logfire", "braintrust", "langsmith", "langfuse"],
+    totals:  { logfire: 96.40, braintrust: 89.40, langsmith: 80.93, langfuse: 72.03 },
+    deltas:  null,
+    scores: {
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 8.0, "pagination": 10.0, "export-formats": 10.0, "freshness": 10.0, "otel-fidelity": 10.0 },
+      braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 8.0, "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
+      langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 5.67, "auth-access": 9.0,  "latency": 8.0, "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
+      langfuse:   { "completeness": 10.0, "query-flex": 7.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 4.0, "pagination": 6.0,  "export-formats": 5.0,  "freshness": 4.0,  "otel-fidelity": 5.0 },
+    },
+    raw: {
+      logfire:    { latency: 372.1,  freshness: 5.0  },
+      braintrust: { latency: 335.5,  freshness: 0.4  },
+      langsmith:  { latency: 464.3,  freshness: 4.7  },
+      langfuse:   { latency: 1293.1, freshness: 46.5 },
+    },
+  },
+};
+
+// Blue sequential ramp (dark-mode steps), score 0 → 10
+const RAMP = ["#0d366b","#104281","#184f95","#1c5cab","#256abf","#2a78d6","#3987e5","#5598e7","#6da7ec","#86b6ef","#9ec5f4"];
+const rampColor = s => RAMP[Math.max(0, Math.min(10, Math.round(s)))];
+const rampInk   = s => Math.round(s) >= 8 ? "#0b0b0b" : "#ffffff";
+
+const $ = id => document.getElementById(id);
+const fmt = n => String(Math.round(n * 100) / 100);
+
+function renderLeaderboard(c) {
+  $("leaderboard").innerHTML = c.ranking.map((p, i) => {
+    const t = c.totals[p], pl = PLATFORMS[p];
+    let delta = "";
+    if (c.deltas) {
+      const d = c.deltas[p];
+      delta = `<span class="delta ${d >= 0 ? "up" : "down"}" title="vs July, same continuous method">${d >= 0 ? "▲" : "▼"} ${Math.abs(d).toFixed(2)}</span>`;
+    }
+    return `
+    <div class="lb-row">
+      <div class="lb-rank ${i === 0 ? "first" : ""}">${i + 1}</div>
+      <div class="lb-name"><span class="dot" style="background:${pl.color}"></span>${pl.label}</div>
+      <div class="lb-track-wrap"><div class="track"><div class="fill" style="width:${(t / 100 * 100).toFixed(1)}%;background:${pl.color}"></div></div></div>
+      <div class="lb-score"><b>${t.toFixed(2)}</b> <span class="of">/ 100</span>${delta}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderHeatmap(c) {
+  const head = `<thead><tr><th>Criterion</th>${c.ranking.map(p =>
+    `<th><span class="dot" style="background:${PLATFORMS[p].color};display:inline-block;vertical-align:baseline;width:8px;height:8px;margin-right:5px"></span>${PLATFORMS[p].label}</th>`).join("")}</tr></thead>`;
+  const rows = CRITERIA.map(([crit, w]) => {
+    const cells = c.ranking.map(p => {
+      const s = c.scores[p][crit];
+      return `<td class="cell" style="background:${rampColor(s)};color:${rampInk(s)}"
+        data-tip="${PLATFORMS[p].label} · ${crit}|score ${fmt(s)} / 10 · weight ${w} → contributes ${(w * s / 10).toFixed(2)} pts">${fmt(s)}</td>`;
+    }).join("");
+    return `<tr><th scope="row">${crit}<span class="w">(${w})</span></th>${cells}</tr>`;
+  }).join("");
+  $("heatmap").innerHTML = head + `<tbody>${rows}</tbody>`;
+}
+
+function renderMeasures(c) {
+  const bestLat = Math.min(...c.ranking.map(p => c.raw[p].latency));
+  const bestFresh = Math.min(...c.ranking.map(p => c.raw[p].freshness));
+  $("measures").innerHTML = c.ranking.map(p => {
+    const r = c.raw[p], pl = PLATFORMS[p];
+    return `
+    <div class="measure" style="--pc:${pl.color}">
+      <div class="m-name"><span class="dot" style="background:${pl.color}"></span>${pl.label}</div>
+      <dl>
+        <dt>read latency</dt><dd class="${r.latency === bestLat ? "best" : ""}">${r.latency.toLocaleString("en-US")} ms</dd>
+        <dt>freshness</dt><dd class="${r.freshness === bestFresh ? "best" : ""}">${r.freshness} s</dd>
+      </dl>
+    </div>`;
+  }).join("");
+}
+
+function render(key) {
+  const c = DATA[key];
+  $("cohort-note").textContent = c.note;
+  renderLeaderboard(c);
+  renderHeatmap(c);
+  renderMeasures(c);
+  $("btn-aug").setAttribute("aria-pressed", String(key === "aug"));
+  $("btn-jul").setAttribute("aria-pressed", String(key === "jul"));
+}
+
+$("btn-aug").addEventListener("click", () => render("aug"));
+$("btn-jul").addEventListener("click", () => render("jul"));
+
+// ramp legend
+$("ramp-bar").innerHTML = RAMP.map(h => `<i style="background:${h}"></i>`).join("");
+
+// heatmap tooltip
+const tip = $("tip");
+document.addEventListener("mouseover", e => {
+  const cell = e.target.closest("[data-tip]");
+  if (!cell) { tip.style.display = "none"; return; }
+  const [head, sub] = cell.dataset.tip.split("|");
+  tip.innerHTML = `<div class="t-head">${head}</div><div class="t-sub">${sub}</div>`;
+  tip.style.display = "block";
+});
+document.addEventListener("mousemove", e => {
+  if (tip.style.display !== "block") return;
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+
+render("aug");
+</script>
+</body>
+</html>

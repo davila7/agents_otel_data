@@ -4,6 +4,8 @@ AI agent observability, tested from both sides: **write identical traces into fo
 
 Every platform folder is a self-contained `uv` project running the same three scenarios (a direct Anthropic call, a tool-calling Pydantic AI agent, and an MCP-powered agent). The `evaluation/` folder holds an executable, evidence-only benchmark of the four read APIs, scored by a multi-agent judge panel.
 
+📊 **[Live dashboard](https://davila7.github.io/agents_otel_data/)** — both cohorts, criteria heatmap, and raw measurements.
+
 ## The verdict
 
 Latest results (August 2026 — all four read APIs measured back-to-back in the same session, continuous scoring):
