@@ -60,7 +60,15 @@
     ],
     "free_expression_probe": "HTTP 400: {\"message\":\"Invalid metric count(*) + 1. Must be one of count,observationsCount,scoresCount,uniqueUserIds,uniqueSessionIds,latency,totalTokens,totalCost\",\"error\":\"InvalidRequestError\"}",
     "csv_accept_header_result": "HTTP 200, content-type=application/json; charset=utf-8",
-    "malformed_query_response": "HTTP 400: {\"message\":\"Invalid request data\",\"error\":[{\"origin\":\"string\",\"code\":\"invalid_format\",\"format\":\"datetime\",\"pattern\":\"/^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|("
+    "malformed_query_response": "HTTP 400: {\"message\":\"Invalid request data\",\"error\":[{\"origin\":\"string\",\"code\":\"invalid_format\",\"format\":\"datetime\",\"pattern\":\"/^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|(",
+    "freshness_followup_samples_s": {
+      "samples": [
+        20.7,
+        7.0,
+        6.3
+      ],
+      "method": "3 extra emit+poll cycles, 1 s polling interval, same session as main run (whose single sample was 10.7 s)"
+    }
   },
   "auth_works": true,
   "retrieval_latency_ms": 202.5,
