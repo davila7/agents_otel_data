@@ -57,13 +57,15 @@
     margin: 26px 0 0; flex-wrap: wrap;
   }
   .toolbar .hint { color: var(--muted); font-size: 13px; }
-  .pills { display: inline-flex; background: var(--panel); border: 1px solid var(--border); border-radius: 9px; padding: 3px; }
-  .pills button {
-    appearance: none; border: 0; background: transparent; color: var(--ink-2);
-    font: 600 13px/1 system-ui, sans-serif; padding: 8px 14px; border-radius: 6px; cursor: pointer;
-    white-space: nowrap;
+  .run-picker { display: inline-flex; align-items: center; gap: 10px; }
+  .run-picker label { color: var(--muted); font-size: 13px; }
+  .run-picker select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%2385847c' stroke-width='1.5' fill='none'/></svg>") no-repeat right 12px center;
+    border: 1px solid var(--border); border-radius: 9px; color: var(--ink);
+    font: 600 13.5px/1 system-ui, sans-serif; padding: 10px 34px 10px 14px; cursor: pointer;
   }
-  .pills button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--border); }
+  .run-picker select:hover { background-color: var(--panel-2); }
   .cohort-note { color: var(--muted); font-size: 13px; margin-top: 10px; max-width: 860px; }
 
   /* ---------- arena table ---------- */
@@ -184,7 +186,7 @@
     <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into four OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
     <div class="meta">
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 3, 2026</span>
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>2 measurement cohorts</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>2 benchmark runs</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>4 platforms</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>9 weighted criteria</span>
       <span><a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a></span>
@@ -192,9 +194,12 @@
   </header>
 
   <div class="toolbar">
-    <div class="pills" role="group" aria-label="Cohort">
-      <button id="btn-aug" aria-pressed="true">Aug 2026 · continuous</button>
-      <button id="btn-jul" aria-pressed="false">Jul 2026 · judge panel</button>
+    <div class="run-picker">
+      <label for="run-select">Results</label>
+      <select id="run-select" aria-label="Benchmark run">
+        <option value="aug" selected>Latest — Aug 2026 · continuous</option>
+        <option value="jul">Previous — Jul 2026 · judge panel</option>
+      </select>
     </div>
     <div class="hint">every number traces to a JSON file in <span style="font-family:var(--mono);font-size:12px">evaluation/results/</span></div>
   </div>
@@ -208,7 +213,7 @@
             <th>Rank <span class="inf" data-tip="Rank range|Position across the three scoring schemes tried: July banded, July continuous, August continuous.">ⓘ</span></th>
             <th>Platform</th>
             <th>Score <span class="inf" data-tip="Score / 100|Bar = this cohort's total. Whisker = range of totals across the three scoring schemes (banded and continuous) — the honest uncertainty band.">ⓘ</span></th>
-            <th>Δ vs Jul <span class="inf" data-tip="Delta|Change vs the July cohort under the same continuous scoring method.">ⓘ</span></th>
+            <th>Δ vs prev <span class="inf" data-tip="Delta|Change vs the previous run under the same continuous scoring method.">ⓘ</span></th>
             <th>Latency <span class="inf" data-tip="Read latency|Median of 3 timed identical read calls, full HTTP round trip. Tint = score relative to the cohort.">ⓘ</span></th>
             <th>Freshness <span class="inf" data-tip="Ingest freshness|Seconds from span emission until it is queryable via the read API. Tint = score relative to the cohort.">ⓘ</span></th>
             <th>Query flex <span class="inf" data-tip="Query flexibility|Time filters, attribute filters, aggregation, free SQL/DSL — judge score 0–10, weight 20.">ⓘ</span></th>
@@ -426,12 +431,10 @@ function render(key) {
   $("cohort-note").textContent = c.note;
   renderArena(c);
   renderHeatmap(c);
-  $("btn-aug").setAttribute("aria-pressed", String(key === "aug"));
-  $("btn-jul").setAttribute("aria-pressed", String(key === "jul"));
+  $("run-select").value = key;
 }
 
-$("btn-aug").addEventListener("click", () => render("aug"));
-$("btn-jul").addEventListener("click", () => render("jul"));
+$("run-select").addEventListener("change", e => render(e.target.value));
 
 // tooltip
 const tip = $("tip");
