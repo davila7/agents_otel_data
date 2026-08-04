@@ -3,135 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Observability Benchmark</title>
-<meta name="description" content="Four OTEL-based agent observability platforms — Logfire, Braintrust, LangSmith, Langfuse — benchmarked on their read APIs with executable scripts.">
+<title>Observability Arena</title>
+<meta name="description" content="Four OTEL-based agent observability platforms — Logfire, Braintrust, LangSmith, Langfuse — ranked on how well their read APIs give trace data back.">
 <style>
   :root {
     color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-2: #222220;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --border: rgba(255,255,255,0.10);
+    --page: #161614;
+    --panel: #1c1c1a;
+    --panel-2: #232321;
+    --ink: #f4f4f0;
+    --ink-2: #b6b5ac;
+    --muted: #85847c;
+    --hairline: #2b2b28;
+    --border: rgba(255,255,255,0.09);
+    --good: #4ade80;
+    --bad: #f87171;
     --logfire: #c98500;
     --braintrust: #3987e5;
     --langsmith: #d95926;
     --langfuse: #199e70;
-    --delta-up: #0ca30c;
-    --delta-down: #d03b3b;
-    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { background: var(--page); }
   body {
-    background: var(--page);
-    color: var(--ink);
-    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 80px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 72px; }
+  a { color: var(--ink-2); }
+  a:hover { color: var(--ink); }
 
   /* ---------- header ---------- */
-  header { padding: 48px 0 28px; }
-  .kicker {
-    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 10px;
+  header { padding: 44px 0 8px; }
+  .title-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 4.5vw, 40px); letter-spacing: .01em; }
+  .method-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--panel);
+    color: var(--ink-2); font-size: 13.5px; padding: 8px 14px; text-decoration: none;
   }
-  h1 { font-size: clamp(26px, 5vw, 38px); line-height: 1.15; letter-spacing: -.02em; }
-  .sub { color: var(--ink-2); margin-top: 12px; max-width: 640px; font-size: 15px; }
-  .header-links { margin-top: 14px; font-size: 14px; }
-  a { color: var(--braintrust); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  .method-btn:hover { background: var(--panel-2); color: var(--ink); }
+  .desc { color: var(--ink-2); margin-top: 14px; max-width: 760px; font-size: 15.5px; }
+  .meta { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 16px; color: var(--muted); font-size: 13.5px; }
+  .meta span { display: inline-flex; align-items: center; gap: 7px; }
+  .meta svg { width: 15px; height: 15px; opacity: .75; }
 
-  /* ---------- cohort toggle ---------- */
-  .toggle {
-    display: inline-flex; margin-top: 22px; border: 1px solid var(--border);
-    border-radius: 8px; overflow: hidden; background: var(--surface);
+  /* ---------- toolbar ---------- */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin: 26px 0 0; flex-wrap: wrap;
   }
-  .toggle button {
+  .toolbar .hint { color: var(--muted); font-size: 13px; }
+  .pills { display: inline-flex; background: var(--panel); border: 1px solid var(--border); border-radius: 9px; padding: 3px; }
+  .pills button {
     appearance: none; border: 0; background: transparent; color: var(--ink-2);
-    font: 600 13px/1 system-ui, sans-serif; padding: 10px 16px; cursor: pointer;
-  }
-  .toggle button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); }
-  .toggle button:not(:last-child) { border-right: 1px solid var(--border); }
-  .cohort-note { color: var(--muted); font-size: 13px; margin-top: 10px; }
-
-  /* ---------- sections ---------- */
-  section { margin-top: 44px; }
-  h2 { font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 16px; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-
-  /* ---------- leaderboard ---------- */
-  .lb-row {
-    display: grid; grid-template-columns: 34px 150px 1fr 128px;
-    gap: 14px; align-items: center; padding: 14px 0;
-  }
-  .lb-row + .lb-row { border-top: 1px solid var(--grid); }
-  .lb-rank { color: var(--muted); font: 600 15px/1 var(--mono); }
-  .lb-rank.first { color: var(--ink); }
-  .lb-name { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .track { height: 14px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
-  .fill { height: 100%; border-radius: 0 4px 4px 0; }
-  .lb-score { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .lb-score b { font-size: 17px; }
-  .lb-score .of { color: var(--muted); font-size: 12px; }
-  .delta { font-size: 12px; font-variant-numeric: tabular-nums; margin-left: 6px; }
-  .delta.up { color: var(--delta-up); }
-  .delta.down { color: var(--delta-down); }
-
-  /* ---------- heatmap ---------- */
-  .scroll-x { overflow-x: auto; }
-  table { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 620px; }
-  th, td { font-size: 13px; }
-  thead th { color: var(--ink-2); font-weight: 600; text-align: center; padding: 6px 4px; }
-  thead th:first-child { text-align: left; }
-  tbody th {
-    text-align: left; font-weight: 500; color: var(--ink-2); padding: 0 10px 0 0;
+    font: 600 13px/1 system-ui, sans-serif; padding: 8px 14px; border-radius: 6px; cursor: pointer;
     white-space: nowrap;
   }
-  tbody th .w { color: var(--muted); font-size: 11px; margin-left: 5px; font-variant-numeric: tabular-nums; }
-  td.cell {
-    text-align: center; font-variant-numeric: tabular-nums; font-weight: 600;
-    padding: 9px 4px; border-radius: 4px; min-width: 74px; cursor: default;
+  .pills button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--border); }
+  .cohort-note { color: var(--muted); font-size: 13px; margin-top: 10px; max-width: 860px; }
+
+  /* ---------- arena table ---------- */
+  .arena-wrap {
+    margin-top: 16px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--panel); overflow: hidden;
   }
-  .ramp-legend { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--muted); font-size: 12px; }
-  .ramp-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; flex: 0 1 220px; }
-  .ramp-bar i { flex: 1; }
+  .scroll-x { overflow-x: auto; }
+  table.arena { border-collapse: collapse; width: 100%; min-width: 880px; }
+  table.arena thead th {
+    background: var(--panel-2); color: var(--ink-2); font-size: 12.5px; font-weight: 600;
+    text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+  table.arena thead th .inf { color: var(--muted); font-weight: 400; margin-left: 4px; cursor: default; }
+  table.arena tbody td { padding: 15px 16px; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+  table.arena tbody tr:last-child td { border-bottom: 0; }
+
+  td.rank { width: 64px; }
+  .rank-n { font: 500 17px/1.2 var(--mono); }
+  .rank-r { color: var(--muted); font: 12px/1.4 var(--mono); white-space: nowrap; }
+
+  td.plat-cell { min-width: 210px; }
+  .p-line { display: flex; align-items: center; gap: 10px; }
+  .p-dot { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .p-name { font: 500 15px/1.3 var(--mono); letter-spacing: -.01em; }
+  .p-sub { color: var(--muted); font-size: 12.5px; margin-top: 3px; margin-left: 22px; }
+
+  td.score-cell { min-width: 220px; }
+  .s-top { display: flex; align-items: baseline; gap: 8px; }
+  .s-val { font: 600 16px/1.2 var(--mono); }
+  .s-of { color: var(--muted); font-size: 11.5px; }
+  .s-track { position: relative; height: 8px; background: var(--panel-2); border-radius: 3px; margin-top: 8px; overflow: visible; }
+  .s-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .s-range {
+    position: absolute; top: 50%; height: 0; border-top: 1.5px solid rgba(255,255,255,.55);
+  }
+  .s-range::before, .s-range::after {
+    content: ""; position: absolute; top: -4px; width: 1.5px; height: 8px; background: rgba(255,255,255,.55);
+  }
+  .s-range::before { left: 0; } .s-range::after { right: 0; }
+  .s-sub { color: var(--muted); font-size: 11.5px; margin-top: 7px; font-family: var(--mono); }
+
+  td.metric { min-width: 118px; }
+  .m-val { font: 500 15px/1.3 var(--mono); white-space: nowrap; }
+  .m-val .arrow { font-size: 11px; }
+  .m-sub { color: var(--muted); font: 12px/1.4 var(--mono); margin-top: 3px; }
+  .up { color: var(--good); } .down { color: var(--bad); }
+
+  /* ---------- section headings ---------- */
+  section { margin-top: 48px; }
+  h2 { font-family: var(--serif); font-weight: 500; font-size: 22px; letter-spacing: .01em; }
+  .h2-sub { color: var(--muted); font-size: 13.5px; margin: 6px 0 16px; }
+
+  /* ---------- criteria heatmap (arena tint) ---------- */
+  .hm-wrap { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden; }
+  table.hm { border-collapse: collapse; width: 100%; min-width: 760px; }
+  table.hm thead th {
+    background: var(--panel-2); color: var(--ink-2); font-size: 12.5px; font-weight: 600;
+    padding: 11px 14px; border-bottom: 1px solid var(--hairline); text-align: center; white-space: nowrap;
+  }
+  table.hm thead th:first-child { text-align: left; }
+  table.hm tbody th {
+    text-align: left; font-weight: 500; font-size: 13px; color: var(--ink-2);
+    padding: 10px 14px; border-bottom: 1px solid var(--hairline); white-space: nowrap;
+  }
+  table.hm tbody th .w { color: var(--muted); font: 11.5px var(--mono); margin-left: 6px; }
+  table.hm td {
+    text-align: center; font: 500 13.5px var(--mono); padding: 10px 12px;
+    border-bottom: 1px solid var(--hairline); cursor: default; min-width: 96px;
+  }
+  table.hm tbody tr:last-child th, table.hm tbody tr:last-child td { border-bottom: 0; }
+  .hm-legend { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+  .hm-legend .sw { width: 34px; height: 12px; border-radius: 3px; }
 
   /* ---------- tooltip ---------- */
   #tip {
     position: fixed; pointer-events: none; z-index: 10; display: none;
-    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 11px; font-size: 12.5px; color: var(--ink); max-width: 240px;
-    box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 11px; font-size: 12.5px; color: var(--ink); max-width: 250px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.55);
   }
   #tip .t-head { font-weight: 600; margin-bottom: 2px; }
   #tip .t-sub { color: var(--ink-2); }
 
-  /* ---------- measurements ---------- */
-  .measure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .measure {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; border-top: 3px solid var(--pc);
-  }
-  .measure .m-name { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
-  .measure dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; }
-  .measure dt { color: var(--muted); }
-  .measure dd { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-family: var(--mono); font-size: 13px; }
-  .measure .best { color: var(--delta-up); }
-  .m-foot { color: var(--muted); font-size: 12.5px; margin-top: 12px; }
-
-  /* ---------- platform cards ---------- */
+  /* ---------- API cards ---------- */
   .plat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-  @media (max-width: 640px) { .plat-grid { grid-template-columns: 1fr; } }
-  .plat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; border-top: 3px solid var(--pc); }
-  .plat .p-name { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; }
+  @media (max-width: 680px) { .plat-grid { grid-template-columns: 1fr; } }
+  .plat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .plat .p-line { margin-bottom: 10px; }
   .plat code {
     display: block; font: 12px/1.5 var(--mono); color: var(--ink-2);
-    background: var(--page); border: 1px solid var(--grid); border-radius: 6px;
+    background: var(--page); border: 1px solid var(--hairline); border-radius: 6px;
     padding: 7px 9px; margin-bottom: 10px; overflow-x: auto; white-space: nowrap;
   }
   .plat p { font-size: 13.5px; color: var(--ink-2); }
@@ -139,83 +164,97 @@
   .plat .lab { font-weight: 600; color: var(--ink); }
 
   /* ---------- caveats ---------- */
+  .caveats { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 6px 20px; }
   .caveats ul { list-style: none; }
-  .caveats li { padding: 10px 0; border-top: 1px solid var(--grid); color: var(--ink-2); font-size: 14px; }
+  .caveats li { padding: 12px 0; border-top: 1px solid var(--hairline); color: var(--ink-2); font-size: 14px; }
   .caveats li:first-child { border-top: 0; }
   .caveats b { color: var(--ink); }
-  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--grid); color: var(--muted); font-size: 13px; }
-
-  @media (max-width: 560px) {
-    .lb-row { grid-template-columns: 24px 1fr 90px; }
-    .lb-track-wrap { grid-column: 1 / -1; }
-  }
+  footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 13px; }
+  footer code { font-family: var(--mono); font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="kicker">OTEL read-API benchmark · executable, reproducible</div>
-    <h1>Which agent-observability platform gives your data back?</h1>
-    <p class="sub">The same three traced agent scenarios — a direct Anthropic call, a Pydantic AI agent with tools, and an MCP server over stdio — written into four OTEL-based platforms. Then each platform's <em>read API</em> is benchmarked with executable scripts and scored on 9 weighted criteria.</p>
-    <div class="header-links">
-      <a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a>
-      <span style="color:var(--muted)"> · every number traces to a JSON file in <span style="font-family:var(--mono);font-size:13px">evaluation/results/</span></span>
+    <div class="title-row">
+      <h1>Observability Arena</h1>
+      <a class="method-btn" href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">View Methodology <span aria-hidden="true">→</span></a>
     </div>
-    <div class="toggle" role="group" aria-label="Cohort">
+    <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into four OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
+    <div class="meta">
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 3, 2026</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>2 measurement cohorts</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>4 platforms</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>9 weighted criteria</span>
+      <span><a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a></span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="pills" role="group" aria-label="Cohort">
       <button id="btn-aug" aria-pressed="true">Aug 2026 · continuous</button>
       <button id="btn-jul" aria-pressed="false">Jul 2026 · judge panel</button>
     </div>
-    <p class="cohort-note" id="cohort-note"></p>
-  </header>
+    <div class="hint">every number traces to a JSON file in <span style="font-family:var(--mono);font-size:12px">evaluation/results/</span></div>
+  </div>
+  <p class="cohort-note" id="cohort-note"></p>
 
-  <section>
-    <h2>Leaderboard</h2>
-    <div class="card" id="leaderboard"></div>
-  </section>
-
-  <section>
-    <h2>Score heatmap — 9 criteria × 4 platforms</h2>
-    <div class="card">
-      <div class="scroll-x"><table id="heatmap"></table></div>
-      <div class="ramp-legend">
-        <span>0</span>
-        <div class="ramp-bar" id="ramp-bar"></div>
-        <span>10</span>
-        <span style="margin-left:8px">score per criterion · weight in parentheses · hover a cell for its weighted contribution</span>
-      </div>
+  <div class="arena-wrap">
+    <div class="scroll-x">
+      <table class="arena">
+        <thead>
+          <tr>
+            <th>Rank <span class="inf" data-tip="Rank range|Position across the three scoring schemes tried: July banded, July continuous, August continuous.">ⓘ</span></th>
+            <th>Platform</th>
+            <th>Score <span class="inf" data-tip="Score / 100|Bar = this cohort's total. Whisker = range of totals across the three scoring schemes (banded and continuous) — the honest uncertainty band.">ⓘ</span></th>
+            <th>Δ vs Jul <span class="inf" data-tip="Delta|Change vs the July cohort under the same continuous scoring method.">ⓘ</span></th>
+            <th>Latency <span class="inf" data-tip="Read latency|Median of 3 timed identical read calls, full HTTP round trip. Tint = score relative to the cohort.">ⓘ</span></th>
+            <th>Freshness <span class="inf" data-tip="Ingest freshness|Seconds from span emission until it is queryable via the read API. Tint = score relative to the cohort.">ⓘ</span></th>
+            <th>Query flex <span class="inf" data-tip="Query flexibility|Time filters, attribute filters, aggregation, free SQL/DSL — judge score 0–10, weight 20.">ⓘ</span></th>
+            <th>Exports <span class="inf" data-tip="Export formats|Formats actually delivered by the read API — judge score 0–10, weight 8.">ⓘ</span></th>
+          </tr>
+        </thead>
+        <tbody id="arena-body"></tbody>
+      </table>
     </div>
-  </section>
+  </div>
 
   <section>
-    <h2>Raw measurements</h2>
-    <div class="measure-grid" id="measures"></div>
-    <p class="m-foot">Latency = median of 3 timed identical read calls, full HTTP round trip. Freshness = seconds from span emission until it is queryable via the read API. Green marks the best value in the cohort.</p>
+    <h2>All nine criteria</h2>
+    <p class="h2-sub">Judge scores 0–10 per criterion (weight in parentheses). Hover a cell for its weighted contribution to the total.</p>
+    <div class="hm-wrap"><div class="scroll-x"><table class="hm" id="heatmap"></table></div></div>
+    <div class="hm-legend">
+      <span class="sw" style="background:rgba(248,113,113,.30)"></span><span>0 — weak</span>
+      <span class="sw" style="background:transparent;border:1px solid var(--hairline)"></span><span>5</span>
+      <span class="sw" style="background:rgba(74,222,128,.30)"></span><span>10 — strong</span>
+    </div>
   </section>
 
   <section>
     <h2>The four read APIs</h2>
+    <p class="h2-sub">What you actually call, and what gets in the way.</p>
     <div class="plat-grid">
-      <div class="plat" style="--pc:var(--logfire)">
-        <div class="p-name"><span class="dot" style="background:var(--logfire)"></span>Logfire</div>
+      <div class="plat">
+        <div class="p-line"><span class="p-dot" style="background:var(--logfire)"></span><span class="p-name">Logfire</span></div>
         <code>POST /v2/query · SQL · pylf_v2 read token</code>
         <p><span class="lab">Strength:</span> full SQL over spans, and the widest export menu (JSON, NDJSON, CSV, Arrow).</p>
         <p><span class="lab">Friction:</span> returns Arrow binary unless you send <b>Accept: application/json</b>; <b>min_timestamp</b> is required; ~10 queries/min rate limit.</p>
       </div>
-      <div class="plat" style="--pc:var(--braintrust)">
-        <div class="p-name"><span class="dot" style="background:var(--braintrust)"></span>Braintrust</div>
+      <div class="plat">
+        <div class="p-line"><span class="p-dot" style="background:var(--braintrust)"></span><span class="p-name">Braintrust</span></div>
         <code>GET /v1/project_logs/{id}/fetch · POST /btql · Bearer</code>
         <p><span class="lab">Strength:</span> BTQL query language and sub-second freshness (0.4&nbsp;s in both cohorts).</p>
         <p><span class="lab">Friction:</span> JSON-only export; fetch pagination can re-return rows — dedupe by <b>id</b>.</p>
       </div>
-      <div class="plat" style="--pc:var(--langsmith)">
-        <div class="p-name"><span class="dot" style="background:var(--langsmith)"></span>LangSmith</div>
+      <div class="plat">
+        <div class="p-line"><span class="p-dot" style="background:var(--langsmith)"></span><span class="p-name">LangSmith</span></div>
         <code>POST /api/v1/runs/query · X-Api-Key</code>
         <p><span class="lab">Strength:</span> expressive filter DSL (<b>eq(is_root, true)</b>) and solid cursor pagination.</p>
         <p><span class="lab">Friction:</span> projects addressed by UUID (resolve names first); 10 req/10&nbsp;s rate limit; Parquet export is plan-gated; slowest read latency in the August cohort.</p>
       </div>
-      <div class="plat" style="--pc:var(--langfuse)">
-        <div class="p-name"><span class="dot" style="background:var(--langfuse)"></span>Langfuse</div>
+      <div class="plat">
+        <div class="p-line"><span class="p-dot" style="background:var(--langfuse)"></span><span class="p-name">Langfuse</span></div>
         <code>GET /api/public/v2/observations · HTTP Basic pk/sk</code>
         <p><span class="lab">Strength:</span> biggest jump July → August (65.63 → 80.83 continuous) after moving to the observations v2 API; fastest read latency in the August cohort (202.5&nbsp;ms).</p>
         <p><span class="lab">Friction:</span> rows are observations — group by <b>traceId</b> to reconstruct traces; I/O fields need explicit <b>?fields=</b> opt-in; slowest ingest freshness in the August cohort (10.7&nbsp;s).</p>
@@ -223,11 +262,12 @@
     </div>
   </section>
 
-  <section class="caveats">
+  <section>
     <h2>Read the numbers honestly</h2>
-    <div class="card">
+    <p class="h2-sub">The caveats that keep this benchmark trustworthy.</p>
+    <div class="caveats">
       <ul>
-        <li><b>The ranking is robust; the top gap is not.</b> Logfire &gt; Braintrust holds across every scoring scheme tried, but the size of the gap is method-dependent (roughly 2–7 points depending on banded vs continuous scoring). Don't read the August 0.37-point margin as a precise measurement.</li>
+        <li><b>The ranking is robust; the top gap is not.</b> Logfire &gt; Braintrust holds across every scoring scheme tried, but the size of the gap is method-dependent (roughly 2–7 points depending on banded vs continuous scoring). Don't read the August 0.37-point margin as a precise measurement — that's what the whisker on the score bar shows.</li>
         <li><b>Continuous scores are cohort-normalized.</b> Latency and freshness use log-scale min–max within the cohort, so the worst platform gets 0.0 <em>by construction</em>. LangSmith's latency 0.0 means "slowest of these four in this session", not "broken".</li>
         <li><b>Logfire freshness is a single sample</b> (n=1 per cohort). Treat its freshness score as indicative, not measured.</li>
         <li><b>July is the frozen record.</b> The judge-panel scores (96.40 / 89.40 / 80.93 / 72.03) were produced once by a 3-judge panel with a banded rubric and are never edited. August is a re-run on the same rubric after Langfuse shipped its v2 API — all four platforms were re-measured back-to-back in one session.</li>
@@ -238,7 +278,7 @@
   </section>
 
   <footer>
-    Reproduce it: <span style="font-family:var(--mono)">evaluation/eval_&lt;platform&gt;.py</span> writes <span style="font-family:var(--mono)">results/&lt;platform&gt;.json</span>; <span style="font-family:var(--mono)">rescore_continuous.py</span> recomputes the continuous cohort scores. Rubric, methodology and caveats: <a href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">evaluation/RESULTS.md</a>.
+    Reproduce it: <code>evaluation/eval_&lt;platform&gt;.py</code> writes <code>results/&lt;platform&gt;.json</code>; <code>rescore_continuous.py</code> recomputes the continuous cohort scores. Rubric, methodology and caveats: <a href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">evaluation/RESULTS.md</a>.
   </footer>
 </div>
 
@@ -254,16 +294,25 @@ const CRITERIA = [
 ];
 
 const PLATFORMS = {
-  logfire:    { label: "Logfire",    color: "var(--logfire)" },
-  braintrust: { label: "Braintrust", color: "var(--braintrust)" },
-  langsmith:  { label: "LangSmith",  color: "var(--langsmith)" },
-  langfuse:   { label: "Langfuse",   color: "var(--langfuse)" },
+  logfire:    { label: "Logfire",    vendor: "Pydantic · SQL",           color: "var(--logfire)" },
+  braintrust: { label: "Braintrust", vendor: "Braintrust · BTQL",        color: "var(--braintrust)" },
+  langsmith:  { label: "LangSmith",  vendor: "LangChain · filter DSL",   color: "var(--langsmith)" },
+  langfuse:   { label: "Langfuse",   vendor: "Langfuse · REST v2",       color: "var(--langfuse)" },
+};
+
+// Totals across the three scoring schemes, for the whisker + rank range:
+// July banded (final_scores.json), July continuous (final_scores_continuous.json),
+// August continuous (final_scores_continuous_aug2026.json).
+const SCHEMES = {
+  logfire:    { totals: [96.40, 93.14, 88.73], ranks: [1, 1, 1] },
+  braintrust: { totals: [89.40, 91.00, 88.36], ranks: [2, 2, 2] },
+  langsmith:  { totals: [80.93, 76.46, 73.99], ranks: [3, 3, 4] },
+  langfuse:   { totals: [72.03, 65.63, 80.83], ranks: [4, 4, 3] },
 };
 
 const DATA = {
   aug: {
     note: "August 2026 cohort · continuous scoring (final_scores_continuous_aug2026.json): latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep the July judge averages. Deltas compare against July under the same continuous method.",
-    source: "final_scores_continuous_aug2026.json",
     ranking: ["logfire", "braintrust", "langfuse", "langsmith"],
     totals:  { logfire: 88.73, braintrust: 88.36, langfuse: 80.83, langsmith: 73.99 },
     // vs July continuous totals (93.14 / 91.00 / 65.63 / 76.46)
@@ -283,7 +332,6 @@ const DATA = {
   },
   jul: {
     note: "July 2026 cohort · frozen 3-judge panel with the banded rubric (final_scores.json). This is the original record; it is never edited.",
-    source: "final_scores.json",
     ranking: ["logfire", "braintrust", "langsmith", "langfuse"],
     totals:  { logfire: 96.40, braintrust: 89.40, langsmith: 80.93, langfuse: 72.03 },
     deltas:  null,
@@ -302,39 +350,70 @@ const DATA = {
   },
 };
 
-// Blue sequential ramp (dark-mode steps), score 0 → 10
-const RAMP = ["#0d366b","#104281","#184f95","#1c5cab","#256abf","#2a78d6","#3987e5","#5598e7","#6da7ec","#86b6ef","#9ec5f4"];
-const rampColor = s => RAMP[Math.max(0, Math.min(10, Math.round(s)))];
-const rampInk   = s => Math.round(s) >= 8 ? "#0b0b0b" : "#ffffff";
-
 const $ = id => document.getElementById(id);
 const fmt = n => String(Math.round(n * 100) / 100);
 
-function renderLeaderboard(c) {
-  $("leaderboard").innerHTML = c.ranking.map((p, i) => {
-    const t = c.totals[p], pl = PLATFORMS[p];
-    let delta = "";
+// good↔bad tint for a 0–10 score: green above 5, red below, neutral at 5.
+function tint(score) {
+  if (score >= 5) return `rgba(74,222,128,${((score - 5) / 5 * 0.26).toFixed(3)})`;
+  return `rgba(248,113,113,${((5 - score) / 5 * 0.30).toFixed(3)})`;
+}
+function scoreInk(score) { return score >= 5 ? "var(--good)" : "var(--bad)"; }
+
+function metricCell(rawText, score, tipHead, tipSub) {
+  return `<td class="metric" style="background:${tint(score)}" data-tip="${tipHead}|${tipSub}">
+    <div class="m-val">${rawText}</div>
+    <div class="m-sub" style="color:${scoreInk(score)}">${fmt(score)} / 10</div>
+  </td>`;
+}
+
+function renderArena(c) {
+  $("arena-body").innerHTML = c.ranking.map((p, i) => {
+    const pl = PLATFORMS[p], sch = SCHEMES[p], t = c.totals[p], r = c.raw[p], s = c.scores[p];
+    const lo = Math.min(...sch.totals), hi = Math.max(...sch.totals);
+    const rlo = Math.min(...sch.ranks), rhi = Math.max(...sch.ranks);
+    let delta;
     if (c.deltas) {
       const d = c.deltas[p];
-      delta = `<span class="delta ${d >= 0 ? "up" : "down"}" title="vs July, same continuous method">${d >= 0 ? "▲" : "▼"} ${Math.abs(d).toFixed(2)}</span>`;
+      delta = `<div class="m-val ${d >= 0 ? "up" : "down"}"><span class="arrow">${d >= 0 ? "▲" : "▼"}</span> ${Math.abs(d).toFixed(2)}</div>
+               <div class="m-sub">same method</div>`;
+    } else {
+      delta = `<div class="m-val" style="color:var(--muted)">—</div><div class="m-sub">frozen record</div>`;
     }
     return `
-    <div class="lb-row">
-      <div class="lb-rank ${i === 0 ? "first" : ""}">${i + 1}</div>
-      <div class="lb-name"><span class="dot" style="background:${pl.color}"></span>${pl.label}</div>
-      <div class="lb-track-wrap"><div class="track"><div class="fill" style="width:${(t / 100 * 100).toFixed(1)}%;background:${pl.color}"></div></div></div>
-      <div class="lb-score"><b>${t.toFixed(2)}</b> <span class="of">/ 100</span>${delta}</div>
-    </div>`;
+    <tr>
+      <td class="rank">
+        <div class="rank-n">${i + 1}</div>
+        <div class="rank-r">${rlo} ⇢ ${rhi}</div>
+      </td>
+      <td class="plat-cell">
+        <div class="p-line"><span class="p-dot" style="background:${pl.color}"></span><span class="p-name">${pl.label}</span></div>
+        <div class="p-sub">${pl.vendor}</div>
+      </td>
+      <td class="score-cell" data-tip="${pl.label} — score|bar: this cohort ${t.toFixed(2)} · whisker: ${lo.toFixed(2)}–${hi.toFixed(2)} across banded and continuous schemes">
+        <div class="s-top"><span class="s-val">${t.toFixed(2)}</span><span class="s-of">/ 100</span></div>
+        <div class="s-track">
+          <div class="s-fill" style="width:${t}%;background:${pl.color}"></div>
+          <div class="s-range" style="left:${lo}%;width:${(hi - lo)}%"></div>
+        </div>
+        <div class="s-sub">${lo.toFixed(2)}–${hi.toFixed(2)} across schemes</div>
+      </td>
+      <td class="metric">${delta}</td>
+      ${metricCell(r.latency.toLocaleString("en-US") + " ms", s["latency"], pl.label + " — read latency", "median of 3 calls · cohort-normalized score " + fmt(s["latency"]) + "/10")}
+      ${metricCell(r.freshness + " s", s["freshness"], pl.label + " — freshness", "write-to-read lag · cohort-normalized score " + fmt(s["freshness"]) + "/10")}
+      ${metricCell(fmt(s["query-flex"]), s["query-flex"], pl.label + " — query flexibility", "weight 20 → contributes " + (20 * s["query-flex"] / 10).toFixed(1) + " pts")}
+      ${metricCell(fmt(s["export-formats"]), s["export-formats"], pl.label + " — export formats", "weight 8 → contributes " + (8 * s["export-formats"] / 10).toFixed(1) + " pts")}
+    </tr>`;
   }).join("");
 }
 
 function renderHeatmap(c) {
   const head = `<thead><tr><th>Criterion</th>${c.ranking.map(p =>
-    `<th><span class="dot" style="background:${PLATFORMS[p].color};display:inline-block;vertical-align:baseline;width:8px;height:8px;margin-right:5px"></span>${PLATFORMS[p].label}</th>`).join("")}</tr></thead>`;
+    `<th><span class="p-dot" style="background:${PLATFORMS[p].color};display:inline-block;vertical-align:-1px;width:9px;height:9px;margin-right:6px;border-radius:2px"></span>${PLATFORMS[p].label}</th>`).join("")}</tr></thead>`;
   const rows = CRITERIA.map(([crit, w]) => {
     const cells = c.ranking.map(p => {
       const s = c.scores[p][crit];
-      return `<td class="cell" style="background:${rampColor(s)};color:${rampInk(s)}"
+      return `<td style="background:${tint(s)};color:${s >= 5 ? "var(--ink)" : "var(--bad)"}"
         data-tip="${PLATFORMS[p].label} · ${crit}|score ${fmt(s)} / 10 · weight ${w} → contributes ${(w * s / 10).toFixed(2)} pts">${fmt(s)}</td>`;
     }).join("");
     return `<tr><th scope="row">${crit}<span class="w">(${w})</span></th>${cells}</tr>`;
@@ -342,28 +421,11 @@ function renderHeatmap(c) {
   $("heatmap").innerHTML = head + `<tbody>${rows}</tbody>`;
 }
 
-function renderMeasures(c) {
-  const bestLat = Math.min(...c.ranking.map(p => c.raw[p].latency));
-  const bestFresh = Math.min(...c.ranking.map(p => c.raw[p].freshness));
-  $("measures").innerHTML = c.ranking.map(p => {
-    const r = c.raw[p], pl = PLATFORMS[p];
-    return `
-    <div class="measure" style="--pc:${pl.color}">
-      <div class="m-name"><span class="dot" style="background:${pl.color}"></span>${pl.label}</div>
-      <dl>
-        <dt>read latency</dt><dd class="${r.latency === bestLat ? "best" : ""}">${r.latency.toLocaleString("en-US")} ms</dd>
-        <dt>freshness</dt><dd class="${r.freshness === bestFresh ? "best" : ""}">${r.freshness} s</dd>
-      </dl>
-    </div>`;
-  }).join("");
-}
-
 function render(key) {
   const c = DATA[key];
   $("cohort-note").textContent = c.note;
-  renderLeaderboard(c);
+  renderArena(c);
   renderHeatmap(c);
-  renderMeasures(c);
   $("btn-aug").setAttribute("aria-pressed", String(key === "aug"));
   $("btn-jul").setAttribute("aria-pressed", String(key === "jul"));
 }
@@ -371,15 +433,12 @@ function render(key) {
 $("btn-aug").addEventListener("click", () => render("aug"));
 $("btn-jul").addEventListener("click", () => render("jul"));
 
-// ramp legend
-$("ramp-bar").innerHTML = RAMP.map(h => `<i style="background:${h}"></i>`).join("");
-
-// heatmap tooltip
+// tooltip
 const tip = $("tip");
 document.addEventListener("mouseover", e => {
-  const cell = e.target.closest("[data-tip]");
-  if (!cell) { tip.style.display = "none"; return; }
-  const [head, sub] = cell.dataset.tip.split("|");
+  const el = e.target.closest("[data-tip]");
+  if (!el) { tip.style.display = "none"; return; }
+  const [head, sub] = el.dataset.tip.split("|");
   tip.innerHTML = `<div class="t-head">${head}</div><div class="t-sub">${sub}</div>`;
   tip.style.display = "block";
 });
