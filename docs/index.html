@@ -165,12 +165,6 @@
   .plat p + p { margin-top: 6px; }
   .plat .lab { font-weight: 600; color: var(--ink); }
 
-  /* ---------- caveats ---------- */
-  .caveats { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 6px 20px; }
-  .caveats ul { list-style: none; }
-  .caveats li { padding: 12px 0; border-top: 1px solid var(--hairline); color: var(--ink-2); font-size: 14px; }
-  .caveats li:first-child { border-top: 0; }
-  .caveats b { color: var(--ink); }
   footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--hairline); color: var(--muted); font-size: 13px; }
   footer code { font-family: var(--mono); font-size: 12px; }
 </style>
@@ -267,23 +261,8 @@
     </div>
   </section>
 
-  <section>
-    <h2>Read the numbers honestly</h2>
-    <p class="h2-sub">The caveats that keep this benchmark trustworthy.</p>
-    <div class="caveats">
-      <ul>
-        <li><b>The ranking is robust; the top gap is not.</b> Logfire &gt; Braintrust holds across every scoring scheme tried, but the size of the gap is method-dependent (roughly 2–7 points depending on banded vs continuous scoring). Don't read the August 0.37-point margin as a precise measurement — that's what the whisker on the score bar shows.</li>
-        <li><b>Continuous scores are cohort-normalized.</b> Latency and freshness use log-scale min–max within the cohort, so the worst platform gets 0.0 <em>by construction</em>. LangSmith's latency 0.0 means "slowest of these four in this session", not "broken".</li>
-        <li><b>Logfire freshness is a single sample</b> (n=1 per cohort). Treat its freshness score as indicative, not measured.</li>
-        <li><b>July is the frozen record.</b> The judge-panel scores (96.40 / 89.40 / 80.93 / 72.03) were produced once by a 3-judge panel with a banded rubric and are never edited. August is a re-run on the same rubric after Langfuse shipped its v2 API — all four platforms were re-measured back-to-back in one session.</li>
-        <li><b>Small data, single session per cohort.</b> Three traces per platform, one benchmark session per cohort. This measures API ergonomics and behavior, not production-scale performance.</li>
-        <li><b>Credentials decide benchmarks.</b> In the first run Logfire scored 6.67/100 purely because the wrong credential type was provisioned. Every score here was re-verified with working read credentials.</li>
-      </ul>
-    </div>
-  </section>
-
   <footer>
-    Reproduce it: <code>evaluation/eval_&lt;platform&gt;.py</code> writes <code>results/&lt;platform&gt;.json</code>; <code>rescore_continuous.py</code> recomputes the continuous cohort scores. Rubric, methodology and caveats: <a href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">evaluation/RESULTS.md</a>.
+    Full methodology, rubric, raw evidence and caveats: <a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a>
   </footer>
 </div>
 
