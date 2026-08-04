@@ -6,14 +6,21 @@ Every platform folder is a self-contained `uv` project running the same three sc
 
 ## The verdict
 
+Latest results (August 2026 — all four read APIs measured back-to-back in the same session, continuous scoring):
+
 | Rank | Platform | Score / 100 | What decided it |
 |------|----------|------------:|-----------------|
-| 🥇 | [Logfire](./logfire) (Pydantic) | **96.40** | Arbitrary SQL over raw spans, `gen_ai.*` semantic conventions returned verbatim, 4 export formats actually delivered (JSON/NDJSON/CSV/Arrow) |
-| 🥈 | [Braintrust](./braintrust) | 89.40 | BTQL free query language, fastest ingest (0.4 s write-to-read), best error messages |
-| 🥉 | [LangSmith](./langsmith) | 80.93 | Full trace completeness, cursor pagination, but no free SQL and strict rate limits |
-| 4 | [Langfuse](./langfuse) | 72.03 | Simplest auth and full completeness, but 46.5 s ingest lag and offset-only pagination |
+| 🥇 | [Logfire](./logfire) (Pydantic) | **88.73** | Arbitrary SQL over raw spans, `gen_ai.*` semantic conventions returned verbatim, 4 export formats actually delivered (JSON/NDJSON/CSV/Arrow) |
+| 🥈 | [Braintrust](./braintrust) | 88.36 | BTQL free query language, fastest ingest (0.4 s write-to-read), best error messages |
+| 🥉 | [Langfuse](./langfuse) | 80.83 | Fastest retrieval (202 ms) since its observations v2 API, cursor pagination, verbatim `gen_ai.*`; held back by ~6–21 s ingest lag and JSON-only export |
+| 4 | [LangSmith](./langsmith) | 73.99 | Full trace completeness and cursor pagination, but no free query language and the slowest retrieval of the August session |
 
-Full methodology, rubric, per-judge scores, and caveats: [`evaluation/RESULTS.md`](./evaluation/RESULTS.md). Note the [continuous-scoring sensitivity check](./evaluation/RESULTS.md#sensitivity-check-continuous-scoring-for-measured-metrics): the banded rubric flattened Braintrust's measured wins (0.4 s vs 5.0 s ingest). Logfire ranks first under every scoring scheme tested, but the size of its lead over Braintrust is method-dependent — from 7.0 points (banded) down to 2.1 (log-continuous) — with Logfire ahead on data openness and Braintrust ahead on speed. One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
+Key facts behind the numbers:
+
+- **Logfire vs Braintrust is now a 0.4-point race.** Logfire leads on data openness (free SQL, 4 export formats), Braintrust on speed (0.4 s write-to-read). The gap between them is method-dependent (~0.4–7 points across scoring schemes); the *ranking* is what has stayed stable.
+- **Langfuse made the biggest jump** — from a distant 4th (65.63) to 3rd after shipping its [observations v2 API](./evaluation/RESULTS.md#august-2026-re-run-langfuse-observations-v2): retrieval latency 1293 → 202 ms, ingest lag 46.5 → ~10 s, offset → cursor pagination.
+- The original July judge-panel scores (Logfire 96.40, Braintrust 89.40, LangSmith 80.93, Langfuse 72.03) remain the frozen record in [`evaluation/RESULTS.md`](./evaluation/RESULTS.md), together with the full methodology, rubric, per-judge scores, [sensitivity checks](./evaluation/RESULTS.md#sensitivity-check-continuous-scoring-for-measured-metrics), and caveats.
+- One caveat worth repeating: in the first run Logfire scored dead last (6.67) simply because the wrong credential type was provisioned — its query API requires a read-scope key. **Credentials decide benchmarks.**
 
 ## How the benchmark works
 
@@ -72,14 +79,15 @@ Verified against live APIs, July 2026:
 | Logfire | `POST logfire-us.pydantic.dev/v2/query` | Bearer read-scope API key | Arbitrary SQL over `records` | JSON, NDJSON, CSV, Arrow |
 | Braintrust | `/v1/project_logs/{id}/fetch` + `POST /btql` | Bearer API key | BTQL (SQL-like + pipe syntax) | JSON |
 | LangSmith | `POST /api/v1/runs/query` | `X-Api-Key` header | Function-style filter DSL | JSON |
-| Langfuse | `GET /api/public/traces` et al. | HTTP Basic (public/secret key) | Fixed filters + Metrics API | JSON |
+| Langfuse | `GET /api/public/v2/observations` | HTTP Basic (public/secret key) | Filters + advanced JSON `filter` + Metrics API | JSON |
 
 Gotchas discovered along the way:
 
 - **Logfire** returns Arrow binary unless you send `Accept: application/json` — despite docs saying JSON is the default. `min_timestamp` is required (422 otherwise). Read access needs a read-scope API key; write tokens are rejected.
 - **LangSmith** addresses projects by UUID — resolve names via `GET /api/v1/sessions?name=...`. Rate limit: 10 req/10 s on query endpoints.
 - **Braintrust** fetch pagination can re-return rows across pages — dedupe by `id` when exporting.
-- **Langfuse** legacy offset endpoints degrade on large projects; prefer the cursor-based v2/v3 endpoints.
+- **Langfuse** legacy v1 endpoints (`/api/public/traces`) are offset-paginated and deprecated; the v2 observations API uses cursor pagination and selective field groups (`?fields=` — I/O payloads require explicit opt-in), and returns observation rows you group by `traceId` to reconstruct traces. Real-time ingestion needs a recent SDK (or `x-langfuse-ingestion-version: 4` on raw OTLP exports).
+- **mcp-server-time** breaks with `mcp>=2` (imports the removed `McpError` name) — the demos pin `--with 'mcp<2'` in the uvx invocation.
 - `cryptography` is pinned `<45` in all folders because newer versions need a rust toolchain to build from source on Intel macOS.
 
 ## Credentials
