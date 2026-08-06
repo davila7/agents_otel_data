@@ -3,44 +3,45 @@
   "notes": {
     "project": {
       "name": "agents-otel-data",
-      "id": "d6fe8670-c5a1-483f-b513-8c43c3358be7"
+      "id": "d7a26f8a-2e39-4227-96aa-40fb0b4131a7"
     },
     "latency_samples_ms": [
-      723.6,
-      464.3,
-      351.7
+      99.5,
+      124.9,
+      103.1
     ],
     "recent_root_run_names": [
       "chat-hello",
       "claude.conversation",
       "invoke_agent agent"
     ],
-    "chat_hello_runs_found": 5,
+    "chat_hello_runs_found": 1,
     "runs_stats_sample": {
-      "run_count": 7,
-      "total_tokens": 63190,
-      "median_tokens": 963,
-      "total_cost": 0.11424645
+      "run_count": 4,
+      "total_tokens": 64463,
+      "median_tokens": 1107,
+      "total_cost": 0.2544555
     },
-    "free_expression_probe": "HTTP 400: {\"detail\":\"Unable to parse filter.\"}",
+    "free_expression_probe": "HTTP 400: {\"type\":\"about:blank\",\"title\":\"Bad Request\",\"status\":400,\"detail\":\"invalid request: Query execution failed: Failed to parse filter: Invalid syntax:  --> 1:1\\n  |\\n1 | select * from runs\\n  | ^---\\n  |",
     "csv_accept_header_result": "HTTP 200, content-type=application/json",
     "bulk_export": "LangSmith bulk export (Parquet to S3) is Plus/Enterprise only per docs; not tested.",
-    "malformed_query_response": "HTTP 400: {\"detail\":\"Unable to parse filter.\"}"
+    "time_to_queryable": "could not run demo script: NameError: name 'REPO' is not defined",
+    "malformed_query_response": "HTTP 400: {\"type\":\"about:blank\",\"title\":\"Bad Request\",\"status\":400,\"detail\":\"invalid request: Query execution failed: Failed to parse filter: Invalid syntax:  --> 1:4\\n  |\\n1 | eq(\\n  |    ^---\\n  |\\n  = expected expr\",\"instance\":\"/v2/runs/query\"}\n"
   },
   "auth_works": true,
-  "retrieval_latency_ms": 464.3,
+  "retrieval_latency_ms": 103.1,
   "completeness": {
-    "trace_id": "00000000-0000-0000-a536-be9c7ac734a6",
+    "trace_id": "00000000-0000-0000-78f1-91a15557fb48",
     "root_run_name": "invoke_agent agent",
     "llm_input": true,
     "llm_output": true,
     "model_name": "claude-sonnet-4-5",
     "token_usage": {
-      "input": 981,
-      "output": 183,
+      "input": 958,
+      "output": 155,
       "present": true
     },
-    "cost_usd": 0.005688,
+    "cost_usd": 0.005199,
     "latency_per_span": true,
     "tool_call_args": true,
     "tool_call_results": true,
@@ -54,16 +55,13 @@
     "free_sql_or_dsl": false
   },
   "pagination": {
-    "mechanism": "cursor (cursors.next token in POST /runs/query response)",
+    "mechanism": "cursor (next_cursor token in POST /api/v2/runs/query response)",
     "second_page_fetched": true,
-    "first_page_cursor_keys": [
-      "next",
-      "prev"
-    ]
+    "first_page_has_next_cursor": true
   },
   "export_formats": [
     "json"
   ],
-  "time_to_queryable_s": 4.7,
-  "dx_friction": "Auth is a single X-Api-Key header; only extra step is resolving the project name to a UUID via GET /sessions?name=. Listing runs is a POST /runs/query with a small function-style filter DSL (eq/and/or/gt/has/search) -- expressive for filtering but no server-side arbitrary expressions; aggregates come from a separate fixed-shape /runs/stats endpoint. Cursor pagination via cursors.next. Rate limit of 10 req/10s forces client-side throttling in any script. Malformed filter 'eq(' returned HTTP 400 with a structured error body."
+  "time_to_queryable_s": null,
+  "dx_friction": "Auth is a single X-Api-Key header; only extra step is resolving the project name to a UUID via the tracer-sessions API. Traces and runs use the v2 query endpoints with a small function-style filter DSL (eq/and/or/gt/has/search) -- expressive for filtering but no server-side arbitrary expressions; aggregates come from the separate fixed-shape /runs/stats endpoint. Cursor pagination uses next_cursor. Rate limit of 10 req/10s forces client-side throttling in any script. Malformed filter 'eq(' returned HTTP 400 with a structured error body."
 }
