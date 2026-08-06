@@ -39,7 +39,7 @@ python3 rescore_continuous.py                   # writes results/final_scores_co
 ## Read-API gotchas (verified live, July 2026)
 
 - **Logfire** `POST https://logfire-us.pydantic.dev/v2/query`: returns **Arrow binary by default** despite docs — always send `Accept: application/json`. `min_timestamp` is required (422 otherwise). Rate limit ~10 queries/min. Management API: `https://api-us.pydantic.dev/api/v1/`.
-- **LangSmith** `POST /api/v1/runs/query`: auth via `X-Api-Key`; projects addressed by UUID (resolve names via `GET /api/v1/sessions?name=...`); filter DSL like `eq(is_root, true)`; rate limit 10 req/10 s.
+- **LangSmith** `POST /api/v2/runs/query` and `POST /api/v2/traces/query`: auth via `X-Api-Key` and `X-Tenant-Id`; projects addressed by UUID (resolve names and tenant IDs via the current `GET /api/v1/sessions?name=...` tracer-sessions endpoint); filter DSL like `eq(status, "error")`; cursor pagination via `next_cursor`; rate limit 300 req/10 s.
 - **Braintrust** `GET /v1/project_logs/{id}/fetch` + `POST /btql`: Bearer auth; fetch pagination can re-return rows — dedupe by `id`.
 - **Langfuse** `GET /api/public/v2/observations` (preferred since Aug 2026; v1 `/api/public/traces` is deprecated): HTTP Basic (pk-lf / sk-lf); cursor pagination via `meta.cursor`; selective field groups via `?fields=` (I/O needs explicit opt-in); rows are observations — group by `traceId` to reconstruct traces. Real-time ingest with recent SDKs (measured 10.7 s lag, down from 46.5 s on v1).
 - **mcp-server-time** requires `--with 'mcp<2'` in the uvx invocation (imports `McpError`, removed in mcp 2.x) — already pinned in all four `03_mcp.py`.
