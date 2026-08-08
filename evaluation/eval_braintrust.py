@@ -52,25 +52,34 @@ def _with_429_retry(do_request, retries=5):
         r = do_request()
         if r.status_code != 429:
             return r
-        wait = float(r.headers.get("retry-after") or 2 ** attempt)
+        wait = float(r.headers.get("retry-after") or 2**attempt)
         time.sleep(min(wait, 30))
     return r
 
 
+def sql(query, fmt=None):
+    body = {"query": query}
+    if fmt:
+        body["fmt"] = fmt
+    return _with_429_retry(lambda: S.post(f"{API}/btql", json=body, timeout=30))
+
+
+FROM = f"FROM project_logs('{PROJECT_ID}')"
+SINCE = "WHERE created > '2026-01-01T00:00:00Z'"
+FIELDS = (
+    "id, root_span_id, span_parents, created, input, output, "
+    "metadata, metrics, span_attributes"
+)
+
+
 def fetch(limit=25, cursor=None):
-    params = {"limit": limit}
-    if cursor:
-        params["cursor"] = cursor
-    return _with_429_retry(
-        lambda: S.get(f"{API}/v1/project_logs/{PROJECT_ID}/fetch", params=params, timeout=30)
+    query = (
+        f"SELECT {FIELDS} {FROM} {SINCE} ORDER BY _pagination_key DESC LIMIT {limit}"
     )
+    if cursor:
+        query += f" OFFSET '{cursor}'"
+    return sql(query)
 
-
-def btql(query):
-    return _with_429_retry(lambda: S.post(f"{API}/btql", json={"query": query}, timeout=30))
-
-
-FROM = f"from: project_logs('{PROJECT_ID}')"
 
 # ---------------------------------------------------------------- 1. auth
 r = fetch(limit=1)
@@ -81,10 +90,14 @@ if r.status_code != 200:
     sys.exit(0)
 
 # ------------------------------------------------------- 2. retrieval latency
+LIST_SQL = (
+    f"SELECT root_span_id, created {FROM} {SINCE} AND is_root = true "
+    f"ORDER BY created DESC LIMIT 20"
+)
 lat = []
 for _ in range(3):
     t0 = time.perf_counter()
-    rr = fetch(limit=25)
+    rr = S.post(f"{API}/btql", json={"query": LIST_SQL}, timeout=30)
     rr.raise_for_status()
     lat.append((time.perf_counter() - t0) * 1000)
 metrics["retrieval_latency_ms"] = round(statistics.median(lat), 1)
@@ -98,9 +111,9 @@ for _ in range(4):
     rr = fetch(limit=100, cursor=cursor)
     rr.raise_for_status()
     body = rr.json()
-    events.extend(body.get("events", []))
+    events.extend(body.get("data", []))
     cursor = body.get("cursor")
-    if not cursor or not body.get("events"):
+    if not cursor or not body.get("data"):
         break
 
 traces = {}
@@ -127,7 +140,9 @@ def find_trace(pred):
     return best[1] if best else None
 
 
-tools_trace = find_trace(lambda s: "get_weather" in span_name(s) or "get_currency" in span_name(s))
+tools_trace = find_trace(
+    lambda s: "get_weather" in span_name(s) or "get_currency" in span_name(s)
+)
 mcp_trace = find_trace(lambda s: "get_current_time" in span_name(s))
 msg_trace = find_trace(lambda s: "anthropic.messages.create" in span_name(s))
 metrics["notes"]["traces_found"] = {
@@ -151,7 +166,9 @@ else:
     comp["llm_input"] = bool(llm.get("input"))
     comp["llm_output"] = bool(llm.get("output"))
     comp["model_name"] = bool(md.get("model") or md.get("gen_ai.request.model"))
-    comp["token_usage"] = bool(m.get("prompt_tokens")) and bool(m.get("completion_tokens"))
+    comp["token_usage"] = bool(m.get("prompt_tokens")) and bool(
+        m.get("completion_tokens")
+    )
     comp["cost_usd"] = m.get("estimated_cost") is not None
     comp["latency_per_span"] = all(
         (s.get("metrics") or {}).get("start") and (s.get("metrics") or {}).get("end")
@@ -164,22 +181,26 @@ else:
     if m.get("estimated_cost") is not None:
         metrics["notes"]["example_llm_cost_usd"] = m["estimated_cost"]
     metrics["notes"]["completeness_trace_used"] = (
-        "02_tools" if trace is tools_trace else ("03_mcp" if trace is mcp_trace else "01_messages")
+        "02_tools"
+        if trace is tools_trace
+        else ("03_mcp" if trace is mcp_trace else "01_messages")
     )
     metrics["completeness"] = comp
 
 # -------------------------------------------------------- 4. query flexibility
 qf = {}
 
-r = btql(f"select: id, created | {FROM} | filter: created > '2026-01-01T00:00:00Z' | limit: 5")
+r = sql(f"SELECT id, created {FROM} WHERE created > '2026-01-01T00:00:00Z' LIMIT 5")
 qf["filter_by_time"] = r.status_code == 200 and len(r.json().get("data", [])) > 0
 
-r = btql(f"select: id, span_attributes | {FROM} | filter: span_attributes.type = 'llm' | limit: 5")
-qf["filter_by_name_or_attribute"] = r.status_code == 200 and len(r.json().get("data", [])) > 0
+r = sql(f"SELECT id, span_attributes {FROM} WHERE span_attributes.type = 'llm' LIMIT 5")
+qf["filter_by_name_or_attribute"] = (
+    r.status_code == 200 and len(r.json().get("data", [])) > 0
+)
 
-r = btql(
-    f"{FROM} | dimensions: span_attributes.type as t "
-    f"| measures: count(1) as n, avg(metrics.tokens) as avg_tokens"
+r = sql(
+    f"SELECT span_attributes.type AS t, count(1) AS n, avg(metrics.tokens) AS avg_tokens "
+    f"{FROM} GROUP BY span_attributes.type"
 )
 qf["aggregation"] = r.status_code == 200 and len(r.json().get("data", [])) > 0
 if qf["aggregation"]:
@@ -187,9 +208,9 @@ if qf["aggregation"]:
 else:
     metrics["notes"]["aggregation_error"] = r.text[:300]
 
-r = btql(
-    f"select: (metrics.prompt_tokens + metrics.completion_tokens) * 2 as computed "
-    f"| {FROM} | filter: span_attributes.type = 'llm' | limit: 2"
+r = sql(
+    f"SELECT (metrics.prompt_tokens + metrics.completion_tokens) * 2 AS computed "
+    f"{FROM} WHERE span_attributes.type = 'llm' LIMIT 2"
 )
 qf["free_sql_or_dsl"] = r.status_code == 200 and len(r.json().get("data", [])) > 0
 metrics["query_flexibility"] = qf
@@ -201,30 +222,28 @@ b1 = r1.json()
 if "cursor" in b1:
     pag["mechanism"] = "cursor"
     c = b1.get("cursor")
-    ids1 = {e["id"] for e in b1.get("events", [])}
+    ids1 = {e["id"] for e in b1.get("data", [])}
     if c:
         r2 = fetch(limit=5, cursor=c)
         if r2.status_code == 200:
-            ids2 = {e["id"] for e in r2.json().get("events", [])}
+            ids2 = {e["id"] for e in r2.json().get("data", [])}
             pag["second_page_verified"] = bool(ids2) and ids1.isdisjoint(ids2)
 metrics["pagination"] = pag
 
 # ----------------------------------------------------------- 6. export formats
-fmts = {"json": True}  # every response above was application/json
-# NDJSON / CSV / parquet: try Accept negotiation on the fetch endpoint.
-for accept, name in [
-    ("application/x-ndjson", "ndjson"),
-    ("text/csv", "csv"),
-    ("application/vnd.apache.parquet", "parquet"),
+# /btql takes a fmt parameter; "jsonl" is Braintrust's name for NDJSON.
+fmts = {}
+for name, fmt in [
+    ("json", "json"),
+    ("ndjson", "jsonl"),
+    ("csv", "csv"),
+    ("parquet", "parquet"),
 ]:
-    rr = S.get(
-        f"{API}/v1/project_logs/{PROJECT_ID}/fetch",
-        params={"limit": 1},
-        headers={"Accept": accept},
-        timeout=30,
+    rr = sql(f"SELECT id, created {FROM} {SINCE} LIMIT 5", fmt=fmt)
+    fmts[name] = rr.status_code == 200 and bool(rr.content)
+    metrics["notes"].setdefault("export_format_results", {})[name] = (
+        f"HTTP {rr.status_code}, content-type={rr.headers.get('content-type')}"
     )
-    ct = rr.headers.get("content-type", "")
-    fmts[name] = rr.status_code == 200 and (name in ct or accept in ct)
 metrics["export_formats"] = fmts
 
 # ------------------------------------------------------ 7. time_to_queryable_s
@@ -247,34 +266,45 @@ try:
         emit_done = time.time()
         deadline = emit_done + 120
         while time.time() < deadline:
-            rr = btql(
-                f"select: id, created | {FROM} "
-                f"| filter: span_attributes.name = 'anthropic.messages.create' | limit: 5"
+            rr = sql(
+                f"SELECT id, created {FROM} "
+                f"WHERE span_attributes.name = 'anthropic.messages.create' "
+                f"ORDER BY created DESC LIMIT 5"
             )
             if rr.status_code == 200:
                 fresh = [
-                    d for d in rr.json().get("data", [])
-                    if d.get("created", "") and time.mktime(time.strptime(
-                        d["created"][:19], "%Y-%m-%dT%H:%M:%S")) > 0
+                    d
+                    for d in rr.json().get("data", [])
+                    if d.get("created", "")
+                    and time.mktime(
+                        time.strptime(d["created"][:19], "%Y-%m-%dT%H:%M:%S")
+                    )
+                    > 0
                 ]
                 # compare on created timestamp string vs script start (UTC)
                 start_iso = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t_start))
-                if any(d.get("created", "") > start_iso for d in rr.json().get("data", [])):
+                if any(
+                    d.get("created", "") > start_iso for d in rr.json().get("data", [])
+                ):
                     metrics["time_to_queryable_s"] = round(time.time() - emit_done, 1)
                     break
             time.sleep(2)
         if metrics["time_to_queryable_s"] is None:
-            metrics["notes"]["time_to_queryable"] = "fresh trace not visible within 120s"
+            metrics["notes"]["time_to_queryable"] = (
+                "fresh trace not visible within 120s"
+            )
 except Exception as exc:  # noqa: BLE001
-    metrics["notes"]["time_to_queryable"] = f"could not run 01_messages.py: {type(exc).__name__}"
+    metrics["notes"]["time_to_queryable"] = (
+        f"could not run 01_messages.py: {type(exc).__name__}"
+    )
 
 # ------------------------------------------------------------- 8. dx friction
-r_bad = btql(f"selct: id | {FROM} | limit: 1")  # intentional typo
+r_bad = sql(f"SELECT id {FROM} LIMT 1")  # intentional typo
 bad_snippet = r_bad.text[:200]
 metrics["dx_friction"] = (
-    "Auth is a single Bearer API key; the REST fetch endpoint worked on the first try with "
-    "just the project id. BTQL (pipe syntax) is powerful but its docs require reading "
-    "examples to get dimensions/measures right. Malformed query returned "
+    "Auth is a single Bearer API key; the /btql endpoint worked on the first try with "
+    "just the project id. SQL syntax is standard enough to write without dialect docs, "
+    "though the span field layout still has to be looked up. Malformed query returned "
     f"HTTP {r_bad.status_code} with message: {bad_snippet!r} - "
     "error messages include parser position, which is helpful."
 )
