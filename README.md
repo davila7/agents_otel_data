@@ -87,7 +87,7 @@ Gotchas discovered along the way:
 
 - **Logfire** returns Arrow binary unless you send `Accept: application/json` — despite docs saying JSON is the default. `min_timestamp` is required (422 otherwise). Read access needs a read-scope API key; write tokens are rejected.
 - **LangSmith** addresses projects by UUID — resolve names via `GET /api/v1/sessions?name=...`. Rate limit: 10 req/10 s on query endpoints.
-- **Braintrust** `/v1/project_logs/{id}/fetch` pagination can re-return rows across pages — dedupe by `id`, or page with SQL instead (`ORDER BY _pagination_key DESC` + `OFFSET '<cursor>'`). Every `project_logs()` query needs a range filter on `created` or it scans the whole project history.
+- **Braintrust** `/v1/project_logs/{id}/fetch` pagination can re-return rows across pages — dedupe by `id`, or page with SQL instead (`ORDER BY _pagination_key DESC` + `OFFSET '<cursor>'`). A `project_logs()` query without a range filter on `created` scans the whole project history — a performance lint, only fatal under `lint_mode: "strict"`.
 - **Langfuse** legacy v1 endpoints (`/api/public/traces`) are offset-paginated and deprecated; the v2 observations API uses cursor pagination and selective field groups (`?fields=` — I/O payloads require explicit opt-in), and returns observation rows you group by `traceId` to reconstruct traces. Real-time ingestion needs a recent SDK (or `x-langfuse-ingestion-version: 4` on raw OTLP exports).
 - **mcp-server-time** breaks with `mcp>=2` (imports the removed `McpError` name) — the demos pin `--with 'mcp<2'` in the uvx invocation.
 - `cryptography` is pinned `<45` in all folders because newer versions need a rust toolchain to build from source on Intel macOS.

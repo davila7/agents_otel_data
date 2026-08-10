@@ -231,7 +231,14 @@ if "cursor" in b1:
 metrics["pagination"] = pag
 
 # ----------------------------------------------------------- 6. export formats
-# /btql takes a fmt parameter; "jsonl" is Braintrust's name for NDJSON.
+# /btql takes a fmt parameter; "jsonl" is Braintrust's name for NDJSON. json and jsonl
+# both come back as application/json, so identify the body rather than trust the header.
+SIGNATURES = {
+    "json": lambda b: b.lstrip().startswith(b'{"data"'),
+    "ndjson": lambda b: b.count(b"\n") >= 1 and not b.lstrip().startswith(b'{"data"'),
+    "csv": lambda b: not b.lstrip()[:1] in (b"{", b"[") and b"," in b.split(b"\n")[0],
+    "parquet": lambda b: b.startswith(b"PAR1"),
+}
 fmts = {}
 for name, fmt in [
     ("json", "json"),
@@ -240,7 +247,7 @@ for name, fmt in [
     ("parquet", "parquet"),
 ]:
     rr = sql(f"SELECT id, created {FROM} {SINCE} LIMIT 5", fmt=fmt)
-    fmts[name] = rr.status_code == 200 and bool(rr.content)
+    fmts[name] = rr.status_code == 200 and bool(rr.content) and SIGNATURES[name](rr.content)
     metrics["notes"].setdefault("export_format_results", {})[name] = (
         f"HTTP {rr.status_code}, content-type={rr.headers.get('content-type')}"
     )
