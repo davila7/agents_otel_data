@@ -1,0 +1,217 @@
+{
+  "method": {
+    "cohort": "aug12_2026",
+    "measurement_files": {
+      "logfire": "logfire_aug12_2026.json",
+      "braintrust": "braintrust_aug12_2026.json",
+      "langsmith": "langsmith_aug12_2026.json",
+      "langfuse": "langfuse_aug12_2026.json",
+      "phoenix": "phoenix.json"
+    },
+    "continuous_criteria": [
+      "latency",
+      "freshness"
+    ],
+    "scoring": "10 * log(worst/value) / log(worst/best); other criteria keep judge averages",
+    "categorical_overrides": {
+      "langfuse": {
+        "pagination": 10,
+        "otel-fidelity": 9,
+        "query-flex": 8
+      }
+    },
+    "raw_inputs": {
+      "logfire": {
+        "latency": 326.1,
+        "freshness": 4.9
+      },
+      "langfuse": {
+        "latency": 137.9,
+        "freshness": 6.4
+      },
+      "langsmith": {
+        "latency": 1935.5,
+        "freshness": 4.4
+      },
+      "braintrust": {
+        "latency": 322.9,
+        "freshness": 0.5
+      },
+      "phoenix": {
+        "latency": 87.5,
+        "freshness": 0.1
+      }
+    }
+  },
+  "weights": {
+    "completeness": 25,
+    "query-flex": 20,
+    "dx-friction": 10,
+    "auth-access": 8,
+    "latency": 8,
+    "pagination": 8,
+    "export-formats": 8,
+    "freshness": 8,
+    "otel-fidelity": 5
+  },
+  "platforms": {
+    "logfire": {
+      "criterion_scores": {
+        "completeness": 10.0,
+        "query-flex": 10.0,
+        "dx-friction": 8.0,
+        "auth-access": 10.0,
+        "latency": 5.75,
+        "pagination": 10.0,
+        "export-formats": 10.0,
+        "freshness": 0.64,
+        "otel-fidelity": 10.0
+      },
+      "weighted_contributions": {
+        "completeness": 25.0,
+        "query-flex": 20.0,
+        "dx-friction": 8.0,
+        "auth-access": 8.0,
+        "latency": 4.6,
+        "pagination": 8.0,
+        "export-formats": 8.0,
+        "freshness": 0.51,
+        "otel-fidelity": 5.0
+      },
+      "total_score": 87.11,
+      "banded_total_score": 96.4
+    },
+    "langfuse": {
+      "criterion_scores": {
+        "completeness": 10.0,
+        "query-flex": 8,
+        "dx-friction": 7.33,
+        "auth-access": 10.0,
+        "latency": 8.53,
+        "pagination": 10,
+        "export-formats": 5.0,
+        "freshness": 0.0,
+        "otel-fidelity": 9
+      },
+      "weighted_contributions": {
+        "completeness": 25.0,
+        "query-flex": 16.0,
+        "dx-friction": 7.33,
+        "auth-access": 8.0,
+        "latency": 6.82,
+        "pagination": 8.0,
+        "export-formats": 4.0,
+        "freshness": 0.0,
+        "otel-fidelity": 4.5
+      },
+      "total_score": 79.66,
+      "banded_total_score": 72.03
+    },
+    "langsmith": {
+      "criterion_scores": {
+        "completeness": 10.0,
+        "query-flex": 7.33,
+        "dx-friction": 5.67,
+        "auth-access": 9.0,
+        "latency": 0.0,
+        "pagination": 10.0,
+        "export-formats": 5.0,
+        "freshness": 0.9,
+        "otel-fidelity": 4.0
+      },
+      "weighted_contributions": {
+        "completeness": 25.0,
+        "query-flex": 14.67,
+        "dx-friction": 5.67,
+        "auth-access": 7.2,
+        "latency": 0.0,
+        "pagination": 8.0,
+        "export-formats": 4.0,
+        "freshness": 0.72,
+        "otel-fidelity": 2.0
+      },
+      "total_score": 67.25,
+      "banded_total_score": 80.93
+    },
+    "braintrust": {
+      "criterion_scores": {
+        "completeness": 10.0,
+        "query-flex": 10.0,
+        "dx-friction": 8.0,
+        "auth-access": 10.0,
+        "latency": 5.78,
+        "pagination": 10.0,
+        "export-formats": 5.0,
+        "freshness": 6.13,
+        "otel-fidelity": 4.0
+      },
+      "weighted_contributions": {
+        "completeness": 25.0,
+        "query-flex": 20.0,
+        "dx-friction": 8.0,
+        "auth-access": 8.0,
+        "latency": 4.63,
+        "pagination": 8.0,
+        "export-formats": 4.0,
+        "freshness": 4.9,
+        "otel-fidelity": 2.0
+      },
+      "total_score": 84.53,
+      "banded_total_score": 89.4
+    },
+    "phoenix": {
+      "criterion_scores": {
+        "completeness": 10.0,
+        "query-flex": 5.33,
+        "dx-friction": 9.0,
+        "auth-access": 10.0,
+        "pagination": 10.0,
+        "export-formats": 7.0,
+        "otel-fidelity": 10.0,
+        "latency": 10.0,
+        "freshness": 10.0
+      },
+      "weighted_contributions": {
+        "completeness": 25.0,
+        "query-flex": 10.67,
+        "dx-friction": 9.0,
+        "auth-access": 8.0,
+        "pagination": 8.0,
+        "export-formats": 5.6,
+        "otel-fidelity": 5.0,
+        "latency": 8.0,
+        "freshness": 8.0
+      },
+      "total_score": 87.27,
+      "banded_total_score": null
+    }
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "platform": "phoenix",
+      "total_score": 87.27
+    },
+    {
+      "rank": 2,
+      "platform": "logfire",
+      "total_score": 87.11
+    },
+    {
+      "rank": 3,
+      "platform": "braintrust",
+      "total_score": 84.53
+    },
+    {
+      "rank": 4,
+      "platform": "langfuse",
+      "total_score": 79.66
+    },
+    {
+      "rank": 5,
+      "platform": "langsmith",
+      "total_score": 67.25
+    }
+  ],
+  "winner": "phoenix"
+}

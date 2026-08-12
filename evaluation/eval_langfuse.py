@@ -29,7 +29,9 @@ PUB = os.environ.get("LANGFUSE_PUBLIC_KEY", "")
 SEC = os.environ.get("LANGFUSE_SECRET_KEY", "")
 
 REPO = "/Users/danipower/Proyectos/Github/agents_otel_data"
-RESULTS = os.path.join(REPO, "evaluation", "results", "langfuse_v2.json")
+RESULTS = os.environ.get("EVAL_RESULTS_PATH") or os.path.join(
+    REPO, "evaluation", "results", "langfuse_v2.json"
+)
 
 OBS = "/api/public/v2/observations"
 ALL_FIELDS = "core,basic,time,io,metadata,model,usage,trace_context"

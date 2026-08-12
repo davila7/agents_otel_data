@@ -1,0 +1,69 @@
+{
+  "platform": "langsmith",
+  "notes": {
+    "project": {
+      "name": "agents-otel-data",
+      "id": "d6fe8670-c5a1-483f-b513-8c43c3358be7"
+    },
+    "latency_samples_ms": [
+      2340.0,
+      864.5,
+      1935.5
+    ],
+    "recent_root_run_names": [
+      "chat-hello",
+      "claude.conversation",
+      "invoke_agent agent"
+    ],
+    "chat_hello_runs_found": 5,
+    "runs_stats_sample": {
+      "run_count": 10,
+      "total_tokens": 63392,
+      "median_tokens": 80,
+      "total_cost": 0.11677245
+    },
+    "free_expression_probe": "HTTP 400: {\"detail\":\"Unable to parse filter.\"}",
+    "csv_accept_header_result": "HTTP 200, content-type=application/json",
+    "bulk_export": "LangSmith bulk export (Parquet to S3) is Plus/Enterprise only per docs; not tested.",
+    "malformed_query_response": "HTTP 400: {\"detail\":\"Unable to parse filter.\"}"
+  },
+  "auth_works": true,
+  "retrieval_latency_ms": 1935.5,
+  "completeness": {
+    "trace_id": "00000000-0000-0000-a536-be9c7ac734a6",
+    "root_run_name": "invoke_agent agent",
+    "llm_input": true,
+    "llm_output": true,
+    "model_name": "claude-sonnet-4-5",
+    "token_usage": {
+      "input": 981,
+      "output": 183,
+      "present": true
+    },
+    "cost_usd": 0.005688,
+    "latency_per_span": true,
+    "tool_call_args": true,
+    "tool_call_results": true,
+    "span_tree": true,
+    "span_count": 7
+  },
+  "query_flexibility": {
+    "filter_by_time": true,
+    "filter_by_name_or_attribute": true,
+    "aggregation": true,
+    "free_sql_or_dsl": false
+  },
+  "pagination": {
+    "mechanism": "cursor (cursors.next token in POST /runs/query response)",
+    "second_page_fetched": true,
+    "first_page_cursor_keys": [
+      "next",
+      "prev"
+    ]
+  },
+  "export_formats": [
+    "json"
+  ],
+  "time_to_queryable_s": 4.4,
+  "dx_friction": "Auth is a single X-Api-Key header; only extra step is resolving the project name to a UUID via GET /sessions?name=. Listing runs is a POST /runs/query with a small function-style filter DSL (eq/and/or/gt/has/search) -- expressive for filtering but no server-side arbitrary expressions; aggregates come from a separate fixed-shape /runs/stats endpoint. Cursor pagination via cursors.next. Rate limit of 10 req/10s forces client-side throttling in any script. Malformed filter 'eq(' returned HTTP 400 with a structured error body."
+}

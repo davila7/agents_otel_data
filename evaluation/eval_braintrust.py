@@ -22,7 +22,9 @@ PROJECT_ID = "5d169ed6-af7e-4dbd-a8ca-458253acbfe8"
 KEY = os.environ.get("BRAINTRUST_API_KEY", "")
 
 REPO = "/Users/danipower/Proyectos/Github/agents_otel_data"
-RESULTS = os.path.join(REPO, "evaluation", "results", "braintrust.json")
+RESULTS = os.environ.get("EVAL_RESULTS_PATH") or os.path.join(
+    REPO, "evaluation", "results", "braintrust.json"
+)
 
 metrics = {"platform": "braintrust", "notes": {}}
 

@@ -4,3 +4,4 @@ __pycache__/
 .env
 .logfire/
 .DS_Store
+.gstack/

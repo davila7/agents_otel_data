@@ -21,7 +21,9 @@ import requests
 BASE = "https://logfire-us.pydantic.dev"
 QUERY_URL = BASE + "/v2/query"
 REPO = "/Users/danipower/Proyectos/Github/agents_otel_data"
-RESULTS_PATH = os.path.join(REPO, "evaluation", "results", "logfire.json")
+RESULTS_PATH = os.environ.get("EVAL_RESULTS_PATH") or os.path.join(
+    REPO, "evaluation", "results", "logfire.json"
+)
 MIN_TS = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 notes = []

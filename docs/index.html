@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Observability Arena</title>
-<meta name="description" content="Four OTEL-based agent observability platforms — Logfire, Braintrust, LangSmith, Langfuse — ranked on how well their read APIs give trace data back.">
+<meta name="description" content="Five OTEL-based agent observability platforms — Logfire, Braintrust, LangSmith, Langfuse, Phoenix — ranked on how well their read APIs give trace data back.">
 <style>
   :root {
     color-scheme: dark;
@@ -22,6 +22,7 @@
     --braintrust: #3987e5;
     --langsmith: #d95926;
     --langfuse: #199e70;
+    --phoenix: #a78bfa;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --serif: ui-serif, Georgia, "Times New Roman", serif;
   }
@@ -177,11 +178,11 @@
       <h1>Observability Arena</h1>
       <a class="method-btn" href="https://github.com/davila7/agents_otel_data/blob/main/evaluation/RESULTS.md">View Methodology <span aria-hidden="true">→</span></a>
     </div>
-    <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into four OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
+    <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into five OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
     <div class="meta">
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 3, 2026</span>
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>2 benchmark runs</span>
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>4 platforms</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 12, 2026</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>3 benchmark runs</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>5 platforms</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>9 weighted criteria</span>
       <span><a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a></span>
     </div>
@@ -191,8 +192,9 @@
     <div class="run-picker">
       <label for="run-select">Results</label>
       <select id="run-select" aria-label="Benchmark run">
-        <option value="aug" selected>Latest — Aug 2026 · continuous</option>
-        <option value="jul">Previous — Jul 2026 · judge panel</option>
+        <option value="aug12" selected>Latest — Aug 12, 2026 · 5 platforms</option>
+        <option value="aug">Aug 3, 2026 · continuous</option>
+        <option value="jul">Jul 2026 · judge panel</option>
       </select>
     </div>
     <div class="hint">every number traces to a JSON file in <span style="font-family:var(--mono);font-size:12px">evaluation/results/</span></div>
@@ -204,7 +206,7 @@
       <table class="arena">
         <thead>
           <tr>
-            <th>Rank <span class="inf" data-tip="Rank range|Position across the three scoring schemes tried: July banded, July continuous, August continuous.">ⓘ</span></th>
+            <th>Rank <span class="inf" data-tip="Rank range|Position across the scoring schemes tried: July banded, July continuous, Aug 3 continuous, Aug 12 continuous.">ⓘ</span></th>
             <th>Platform</th>
             <th>Score <span class="inf" data-tip="Score / 100|Bar = this cohort's total. Whisker = range of totals across the three scoring schemes (banded and continuous) — the honest uncertainty band.">ⓘ</span></th>
             <th>Δ vs prev <span class="inf" data-tip="Delta|Change vs the previous run under the same continuous scoring method.">ⓘ</span></th>
@@ -231,7 +233,7 @@
   </section>
 
   <section>
-    <h2>The four read APIs</h2>
+    <h2>The five read APIs</h2>
     <p class="h2-sub">What you actually call, and what gets in the way.</p>
     <div class="plat-grid">
       <div class="plat">
@@ -255,8 +257,14 @@
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--langfuse)"></span><span class="p-name">Langfuse</span></div>
         <code>GET /api/public/v2/observations · HTTP Basic pk/sk</code>
-        <p><span class="lab">Strength:</span> biggest jump July → August (65.63 → 80.83 continuous) after moving to the observations v2 API; fastest read latency in the August cohort (202.5&nbsp;ms).</p>
-        <p><span class="lab">Friction:</span> rows are observations — group by <b>traceId</b> to reconstruct traces; I/O fields need explicit <b>?fields=</b> opt-in; slowest ingest freshness in the August cohort (10.7&nbsp;s).</p>
+        <p><span class="lab">Strength:</span> biggest incumbent jump July → August (65.63 → ~80 continuous) after moving to the observations v2 API; sub-140&nbsp;ms retrieval in the Aug 12 cohort.</p>
+        <p><span class="lab">Friction:</span> rows are observations — group by <b>traceId</b> to reconstruct traces; I/O fields need explicit <b>?fields=</b> opt-in; slowest ingest freshness in both August cohorts (~6–11&nbsp;s).</p>
+      </div>
+      <div class="plat">
+        <div class="p-line"><span class="p-dot" style="background:var(--phoenix)"></span><span class="p-name">Phoenix</span></div>
+        <code>GET /s/{space}/v1/projects/{id}/spans · Bearer</code>
+        <p><span class="lab">Strength:</span> fastest read path (87.5&nbsp;ms) and write-to-read lag (0.1&nbsp;s) measured in any cohort; verbatim <b>gen_ai.*</b> keys with W3C ids plus an OTLP-JSON export endpoint; the space serves its own OpenAPI spec.</p>
+        <p><span class="lab">Friction:</span> deliberately simple filters (time, name, attribute, span_kind) — no server-side aggregation and no SQL/DSL, so analysis is client-side; traces reconstructed by grouping on <b>context.trace_id</b>.</p>
       </div>
     </div>
   </section>
@@ -282,21 +290,46 @@ const PLATFORMS = {
   braintrust: { label: "Braintrust", vendor: "Braintrust · BTQL",        color: "var(--braintrust)" },
   langsmith:  { label: "LangSmith",  vendor: "LangChain · filter DSL",   color: "var(--langsmith)" },
   langfuse:   { label: "Langfuse",   vendor: "Langfuse · REST v2",       color: "var(--langfuse)" },
+  phoenix:    { label: "Phoenix",    vendor: "Arize · REST v1",          color: "var(--phoenix)" },
 };
 
-// Totals across the three scoring schemes, for the whisker + rank range:
+// Totals across the scoring schemes, for the whisker + rank range:
 // July banded (final_scores.json), July continuous (final_scores_continuous.json),
-// August continuous (final_scores_continuous_aug2026.json).
+// Aug 3 continuous (final_scores_continuous_aug2026.json),
+// Aug 12 continuous (final_scores_continuous_aug12_2026.json).
+// Phoenix only exists in the Aug 12 cohort.
 const SCHEMES = {
-  logfire:    { totals: [96.40, 93.14, 88.73], ranks: [1, 1, 1] },
-  braintrust: { totals: [89.40, 91.00, 88.36], ranks: [2, 2, 2] },
-  langsmith:  { totals: [80.93, 76.46, 73.99], ranks: [3, 3, 4] },
-  langfuse:   { totals: [72.03, 65.63, 80.83], ranks: [4, 4, 3] },
+  logfire:    { totals: [96.40, 93.14, 88.73, 87.11], ranks: [1, 1, 1, 2] },
+  braintrust: { totals: [89.40, 91.00, 88.36, 84.53], ranks: [2, 2, 2, 3] },
+  langsmith:  { totals: [80.93, 76.46, 73.99, 67.25], ranks: [3, 3, 4, 5] },
+  langfuse:   { totals: [72.03, 65.63, 80.83, 79.66], ranks: [4, 4, 3, 4] },
+  phoenix:    { totals: [87.27], ranks: [1] },
 };
 
 const DATA = {
+  aug12: {
+    note: "August 12, 2026 cohort · Phoenix joins, so all five evals were re-run back-to-back in one session (final_scores_continuous_aug12_2026.json). Latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep judge-panel averages (Phoenix scored by its own 3-judge panel, phoenix_judges.json). The Phoenix–Logfire gap (0.16 pts) is far inside this benchmark's method dependence — read the top as a cluster.",
+    ranking: ["phoenix", "logfire", "braintrust", "langfuse", "langsmith"],
+    totals:  { phoenix: 87.27, logfire: 87.11, braintrust: 84.53, langfuse: 79.66, langsmith: 67.25 },
+    // vs Aug 3 continuous totals (88.73 / 88.36 / 80.83 / 73.99); Phoenix is new
+    deltas:  { logfire: -1.62, braintrust: -3.83, langfuse: -1.17, langsmith: -6.74 },
+    scores: {
+      phoenix:    { "completeness": 10.0, "query-flex": 5.33, "dx-friction": 9.0,  "auth-access": 10.0, "latency": 10.0, "pagination": 10.0, "export-formats": 7.0,  "freshness": 10.0, "otel-fidelity": 10.0 },
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 5.75, "pagination": 10.0, "export-formats": 10.0, "freshness": 0.64, "otel-fidelity": 10.0 },
+      braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 5.78, "pagination": 10.0, "export-formats": 5.0,  "freshness": 6.13, "otel-fidelity": 4.0 },
+      langfuse:   { "completeness": 10.0, "query-flex": 8.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 8.53, "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.0,  "otel-fidelity": 9.0 },
+      langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 5.67, "auth-access": 9.0,  "latency": 0.0,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.9,  "otel-fidelity": 4.0 },
+    },
+    raw: {
+      phoenix:    { latency: 87.5,   freshness: 0.1 },
+      logfire:    { latency: 326.1,  freshness: 4.9 },
+      braintrust: { latency: 322.9,  freshness: 0.5 },
+      langfuse:   { latency: 137.9,  freshness: 6.4 },
+      langsmith:  { latency: 1935.5, freshness: 4.4 },
+    },
+  },
   aug: {
-    note: "August 2026 cohort · continuous scoring (final_scores_continuous_aug2026.json): latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep the July judge averages. Deltas compare against July under the same continuous method.",
+    note: "August 3, 2026 cohort · continuous scoring (final_scores_continuous_aug2026.json): latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep the July judge averages. Deltas compare against July under the same continuous method.",
     ranking: ["logfire", "braintrust", "langfuse", "langsmith"],
     totals:  { logfire: 88.73, braintrust: 88.36, langfuse: 80.83, langsmith: 73.99 },
     // vs July continuous totals (93.14 / 91.00 / 65.63 / 76.46)
@@ -357,10 +390,12 @@ function renderArena(c) {
     const lo = Math.min(...sch.totals), hi = Math.max(...sch.totals);
     const rlo = Math.min(...sch.ranks), rhi = Math.max(...sch.ranks);
     let delta;
-    if (c.deltas) {
+    if (c.deltas && c.deltas[p] != null) {
       const d = c.deltas[p];
       delta = `<div class="m-val ${d >= 0 ? "up" : "down"}"><span class="arrow">${d >= 0 ? "▲" : "▼"}</span> ${Math.abs(d).toFixed(2)}</div>
                <div class="m-sub">same method</div>`;
+    } else if (c.deltas) {
+      delta = `<div class="m-val" style="color:var(--muted)">new</div><div class="m-sub">first cohort</div>`;
     } else {
       delta = `<div class="m-val" style="color:var(--muted)">—</div><div class="m-sub">frozen record</div>`;
     }
@@ -380,7 +415,7 @@ function renderArena(c) {
           <div class="s-fill" style="width:${t}%;background:${pl.color}"></div>
           <div class="s-range" style="left:${lo}%;width:${(hi - lo)}%"></div>
         </div>
-        <div class="s-sub">${lo.toFixed(2)}–${hi.toFixed(2)} across schemes</div>
+        <div class="s-sub">${lo === hi ? "single cohort so far" : lo.toFixed(2) + "–" + hi.toFixed(2) + " across schemes"}</div>
       </td>
       <td class="metric">${delta}</td>
       ${metricCell(r.latency.toLocaleString("en-US") + " ms", s["latency"], pl.label + " — read latency", "median of 3 calls · cohort-normalized score " + fmt(s["latency"]) + "/10")}
@@ -434,7 +469,7 @@ document.addEventListener("mousemove", e => {
   tip.style.left = x + "px"; tip.style.top = y + "px";
 });
 
-render("aug");
+render("aug12");
 </script>
 </body>
 </html>
