@@ -51,7 +51,7 @@
       },
       "env_file": "../langsmith/.env",
       "min_interval_seconds": 1.5,
-      "notes": "1.5s pacing honors the 10 req / 10 s API rate limit."
+      "notes": "1.5s pacing honors the 10 req / 10 s API rate limit. LangSmith OTLP ingest rejects spans with start_time outside +/-24h of ingest time (HTTP 422, verified live 2026-08-13) \u2014 no historical backfill; generate a --days 1 corpus with a fresh anchor and send immediately."
     },
     "langfuse": {
       "endpoint": "${env:LANGFUSE_HOST}/api/public/otel/v1/traces",

@@ -8,6 +8,16 @@ generates a **deterministic synthetic corpus of OTLP trace data**, sends the
 benchmark over this corpus measures the query engine on a non-trivial dataset,
 with every platform holding exactly the same data.
 
+> **Platform quirk (verified live 2026-08-13):** LangSmith's OTLP ingest rejects
+> spans whose `start_time` falls outside ±24 hours of ingest time (HTTP 422), so
+> it cannot receive the shared multi-day corpus. It gets a same-seed corpus
+> regenerated with `--days 1` and a fresh `--anchor` (identical ids/attributes,
+> compressed timestamps), sent immediately after generation:
+> `generate.py --spans 10000 --seed 42 --days 1 --anchor <now> --out ./out_langsmith`
+> then `send.py --platforms langsmith --manifest out_langsmith/manifest.json`.
+> This is itself a data-portability finding: "record once, replay later" does
+> not work against LangSmith.
+
 ## Pipeline
 
 ```bash
