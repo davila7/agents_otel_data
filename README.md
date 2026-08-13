@@ -40,7 +40,7 @@ Key facts behind the numbers:
 ```
 logfire/      Pydantic Logfire     — native SDK; read via SQL Query API (/v2/query)
 langfuse/     Langfuse             — SDK + AnthropicInstrumentor; read via /api/public REST
-langsmith/    LangSmith            — wrap_anthropic + OTLP; read via /runs/query DSL
+langsmith/    LangSmith            — wrap_anthropic + OTLP; read via v2 runs/traces query APIs
 braintrust/   Braintrust           — wrap_anthropic + OTLP; read via fetch + BTQL
 phoenix/      Arize Phoenix        — arize-phoenix-otel + OpenInference; read via REST /v1
 evaluation/   Executable benchmark — eval_*.py, rubric.md, RESULTS.md, results/*.json,
@@ -82,7 +82,7 @@ Verified against live APIs, July–August 2026:
 |----------|--------------|------|----------------|------------------|
 | Logfire | `POST logfire-us.pydantic.dev/v2/query` | Bearer read-scope API key | Arbitrary SQL over `records` | JSON, NDJSON, CSV, Arrow |
 | Braintrust | `/v1/project_logs/{id}/fetch` + `POST /btql` | Bearer API key | BTQL (SQL-like + pipe syntax) | JSON |
-| LangSmith | `POST /api/v1/runs/query` | `X-Api-Key` header | Function-style filter DSL | JSON |
+| LangSmith | `POST /api/v2/runs/query` + `POST /api/v2/traces/query` | `X-Api-Key` + `X-Tenant-Id` headers | Function-style filter DSL | JSON |
 | Langfuse | `GET /api/public/v2/observations` | HTTP Basic (public/secret key) | Filters + advanced JSON `filter` + Metrics API | JSON |
 | Phoenix | `GET app.phoenix.arize.com/s/{space}/v1/projects/{id}/spans` | Bearer API key | Simple filters only (time/name/attribute/span_kind) | JSON, OTLP-JSON |
 

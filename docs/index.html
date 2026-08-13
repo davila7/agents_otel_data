@@ -303,7 +303,7 @@
       </div>
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--langsmith)"></span><span class="p-name">LangSmith</span></div>
-        <code>POST /api/v1/runs/query · X-Api-Key</code>
+        <code>POST /api/v2/runs/query · POST /api/v2/traces/query · X-Api-Key + X-Tenant-Id</code>
         <p><span class="lab">Strength:</span> expressive filter DSL (<b>eq(is_root, true)</b>) and solid cursor pagination.</p>
         <p><span class="lab">Friction:</span> projects addressed by UUID (resolve names first); 10 req/10&nbsp;s rate limit; Parquet export is plan-gated; slowest read latency in the August cohort.</p>
       </div>
