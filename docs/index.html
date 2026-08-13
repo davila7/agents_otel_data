@@ -126,6 +126,17 @@
   .m-sub { color: var(--muted); font: 12px/1.4 var(--mono); margin-top: 3px; }
   .up { color: var(--good); } .down { color: var(--bad); }
 
+  /* ---------- score anatomy ---------- */
+  .anat-wrap { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); padding: 20px 20px 10px; }
+  .anat-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .anat-label { width: 92px; flex: none; font: 500 13.5px var(--mono); color: var(--ink-2); text-align: right; }
+  .anat-bar { flex: 1; display: flex; height: 22px; }
+  .anat-seg { height: 100%; border-radius: 2px; margin-right: 2px; min-width: 2px; cursor: default; }
+  .anat-tot { width: 168px; flex: none; font: 12.5px var(--mono); color: var(--muted); white-space: nowrap; }
+  .anat-tot b { color: var(--ink); font-weight: 600; }
+  .anat-legend { display: flex; gap: 18px; align-items: center; color: var(--muted); font-size: 12.5px; margin: 4px 0 10px 106px; flex-wrap: wrap; }
+  .anat-legend .sw { display: inline-block; width: 26px; height: 11px; border-radius: 2px; vertical-align: -1px; margin-right: 6px; }
+
   /* ---------- section headings ---------- */
   section { margin-top: 48px; }
   h2 { font-family: var(--serif); font-weight: 500; font-size: 22px; letter-spacing: .01em; }
@@ -235,6 +246,18 @@
       </table>
     </div>
   </div>
+
+  <section>
+    <h2>Score anatomy</h2>
+    <p class="h2-sub">Where each total comes from: every segment is one criterion's weighted contribution, in the fixed rubric order (completeness → otel-fidelity). Solid = the 7 judge-scored criteria (84 pts max); hatched = the 2 measured metrics, latency + freshness (16 pts max). Hover any segment.</p>
+    <div class="anat-wrap">
+      <div class="anat-legend">
+        <span><span class="sw" style="background:var(--ink-2)"></span>judge-scored (84)</span>
+        <span><span class="sw" style="background:repeating-linear-gradient(45deg, rgba(255,255,255,.7) 0 3px, rgba(255,255,255,.15) 3px 6px)"></span>measured: latency + freshness (16)</span>
+      </div>
+      <div id="anatomy"></div>
+    </div>
+  </section>
 
   <section>
     <h2>All nine criteria</h2>
@@ -456,6 +479,33 @@ function renderArena(c) {
   }).join("");
 }
 
+const MEASURED = ["latency", "freshness"];
+
+function renderAnatomy(c) {
+  $("anatomy").innerHTML = c.ranking.map(p => {
+    const pl = PLATFORMS[p], s = c.scores[p];
+    let cat = 0, cont = 0;
+    const segs = CRITERIA.map(([crit, w], i) => {
+      const pts = w * s[crit] / 10;
+      const measured = MEASURED.includes(crit);
+      if (measured) cont += pts; else cat += pts;
+      return { crit, w, pts, measured, i };
+    }).filter(g => g.pts > 0.05);
+    const bar = segs.map(g => {
+      const style = g.measured
+        ? `background:repeating-linear-gradient(45deg, ${"rgba(255,255,255,.7)"} 0 3px, rgba(255,255,255,.15) 3px 6px)`
+        : `background:${pl.color};opacity:${g.i % 2 ? .6 : .92}`;
+      return `<div class="anat-seg" style="width:${g.pts}%;${style}"
+        data-tip="${pl.label} · ${g.crit}|weight ${g.w} × score ${fmt(s[g.crit])}/10 → ${g.pts.toFixed(1)} pts${g.measured ? " (measured, cohort-normalized)" : " (judge panel)"}"></div>`;
+    }).join("");
+    return `<div class="anat-row">
+      <div class="anat-label">${pl.label}</div>
+      <div class="anat-bar">${bar}</div>
+      <div class="anat-tot"><b>${c.totals[p].toFixed(2)}</b> = ${cat.toFixed(1)} + ${cont.toFixed(1)}</div>
+    </div>`;
+  }).join("");
+}
+
 function renderHeatmap(c) {
   const head = `<thead><tr><th>Criterion</th>${c.ranking.map(p =>
     `<th><span class="p-dot" style="background:${PLATFORMS[p].color};display:inline-block;vertical-align:-1px;width:9px;height:9px;margin-right:6px;border-radius:2px"></span>${PLATFORMS[p].label}</th>`).join("")}</tr></thead>`;
@@ -474,6 +524,7 @@ function render(key) {
   const c = DATA[key];
   $("cohort-note").textContent = c.note;
   renderArena(c);
+  renderAnatomy(c);
   renderHeatmap(c);
   $("run-select").value = key;
 }
