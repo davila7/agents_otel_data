@@ -276,7 +276,7 @@
     <p class="h2-sub">The arena above queries projects holding 3 demo traces, so its latency column is dominated by HTTP round-trip. A separate benchmark loads ~10k byte-identical synthetic spans into all five platforms and measures the engine itself.</p>
     <div class="plat-grid">
       <div class="plat">
-        <p><span class="lab">The ranking inverts under load.</span> Logfire — 4th on simple request latency — aggregates 10k spans per model in <b>143 ms</b> (SQL GROUP BY) and exports at <b>14,280 rows/s</b>, an order of magnitude ahead of everyone. LangSmith needs <b>5.5 minutes</b> to hand back its own 10k rows (100 rows/page at 10 req/10 s).</p>
+        <p><span class="lab">The ranking inverts under load.</span> Logfire — 4th on simple request latency — aggregates 10k spans per model in <b>171 ms</b> (SQL GROUP BY) and exports at <b>14,280 rows/s</b>, an order of magnitude ahead of everyone. Even after its v2 migration cut everything 7&ndash;11x, LangSmith still takes <b>30 s</b> to hand back its own 10k rows (pages cap at 100).</p>
         <p style="margin-top:10px"><a class="method-btn" href="./query_bench.html">See the query benchmark <span aria-hidden="true">→</span></a></p>
       </div>
       <div class="plat">

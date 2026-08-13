@@ -183,51 +183,59 @@ def bench_braintrust(env, mf):
 
 
 def bench_langsmith(env, mf):
+    # v2 runs/query APIs (the deprecated v1 path measured ~15x slower on the
+    # eval side and was retired from this repo in PR #6); 429s are handled by
+    # Http, so pacing is light and the API's own limits show up in the numbers
     http = Http(_sess({"X-Api-Key": env["LANGSMITH_API_KEY"]}),
-                min_interval=1.5)  # 10 req / 10 s
-    api = "https://api.smith.langchain.com/api/v1"
+                min_interval=0.2)
+    api_v1 = "https://api.smith.langchain.com/api/v1"
+    api_v2 = "https://api.smith.langchain.com/v2"
     project = mf["projects"]["langsmith"]
-    sid = http.request("GET", f"{api}/sessions",
-                       params={"name": project}).json()[0]["id"]
+    session = http.request("GET", f"{api_v1}/sessions",
+                           params={"name": project}).json()[0]
+    sid = session["id"]
+    http.s.headers["X-Tenant-Id"] = session["tenant_id"]
     lo, hi = iso(mf["t_start"] - TIME_PAD), iso(mf["t_end"] + TIME_PAD)
-    win = f'and(gt(start_time, "{lo}"), lt(start_time, "{hi}"))'
+    base = {"project_ids": [sid], "min_start_time": lo,
+            "filter": f'lt(start_time, "{hi}")',
+            "selects": ["ID", "NAME", "RUN_TYPE", "START_TIME", "TRACE_ID"]}
 
     def q(body):
-        r = http.request("POST", f"{api}/runs/query", json=body)
+        r = http.request("POST", f"{api_v2}/runs/query", json=body)
         r.raise_for_status()
         return r.json()
 
     scan_ms, res = timed(lambda: q({
-        "session": [sid], "limit": 100,
-        "filter": f'and(eq(name, "{LLM_SPAN_NAME}"), {win})'}))
+        **base, "page_size": 100,
+        "filter": f'and(eq(name, "{LLM_SPAN_NAME}"), lt(start_time, "{hi}"))'}))
     # /runs/stats is the only server-side aggregate: fixed shape, no group-by
+    # /runs/stats remains v1 and is still the only server-side aggregate
+    win = f'and(gt(start_time, "{lo}"), lt(start_time, "{hi}"))'
     agg_ms, stats = timed(lambda: http.request(
-        "POST", f"{api}/runs/stats",
+        "POST", f"{api_v1}/runs/stats",
         json={"session": [sid], "filter": win}).json())
 
     t0 = time.perf_counter()
     total, cursor = 0, None
     while True:
-        body = {"session": [sid], "limit": 100, "filter": win,
-                "select": ["id", "name", "start_time", "run_type"]}
+        body = {**base, "page_size": 100}
         if cursor:
             body["cursor"] = cursor
         page = q(body)
-        total += len(page.get("runs", []))
-        cursor = (page.get("cursors") or {}).get("next")
+        total += len(page.get("items", []))
+        cursor = page.get("next_cursor")
         if not cursor:
             break
     export_s = round(time.perf_counter() - t0, 1)
     return {
-        "filtered_scan_ms": scan_ms, "filtered_rows": len(res.get("runs", [])),
+        "filtered_scan_ms": scan_ms, "filtered_rows": len(res.get("items", [])),
         "aggregation_ms": agg_ms, "aggregation_supported": "fixed-shape only",
         "aggregation_sample": {k: stats.get(k) for k in
                                ("run_count", "total_tokens", "prompt_tokens")},
         "export_rows": total, "export_wall_s": export_s,
         "export_rows_per_s": round(total / export_s, 1),
-        "method": "runs/query filter DSL; export pages of 100 at 10 req/10s "
-                  "(the rate limit dominates export throughput); stats via "
-                  "/runs/stats (no group-by)",
+        "method": "v2 runs/query filter DSL (X-Tenant-Id, next_cursor), export "
+                  "pages of 100; stats via v1 /runs/stats (no group-by)",
     }
 
 
