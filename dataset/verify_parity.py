@@ -238,7 +238,13 @@ def count_braintrust(env, mf, args) -> dict:
     pid = objs[0]["id"]
     notes = [f"project '{project}' id={pid}",
              "one /fetch event == one span-level row (trace = rows sharing "
-             "root_span_id); pagination can re-return rows, so ids are deduped"]
+             "root_span_id); pagination can re-return rows, so ids are deduped; "
+             "rows outside the manifest time window (event metrics.start, unix "
+             "seconds, padded by TIME_PAD) are excluded — /fetch has no "
+             "server-side time filter, so multiple corpora coexist in the "
+             "project and must be separated client-side"]
+    lo_ts = (mf["t_start"] - TIME_PAD).timestamp() if mf.get("t_start") else None
+    hi_ts = (mf["t_end"] + TIME_PAD).timestamp() if mf.get("t_end") else None
     ids: set[str] = set()
     root_ids: set[str] = set()
     cursor = None
@@ -254,6 +260,9 @@ def count_braintrust(env, mf, args) -> dict:
         body = r.json()
         events = body.get("events", [])
         for e in events:
+            start = (e.get("metrics") or {}).get("start")
+            if start is not None and lo_ts is not None and not (lo_ts <= start <= hi_ts):
+                continue
             ids.add(e["id"])
             if e.get("root_span_id"):
                 root_ids.add(e["root_span_id"])
