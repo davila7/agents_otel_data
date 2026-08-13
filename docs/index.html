@@ -37,8 +37,18 @@
   a { color: var(--ink-2); }
   a:hover { color: var(--ink); }
 
+  /* ---------- site nav ---------- */
+  .site-nav { display: flex; gap: 8px; padding-top: 22px; }
+  .site-nav a {
+    display: inline-block; padding: 8px 16px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--ink-2); font: 600 13.5px/1 system-ui, sans-serif; text-decoration: none;
+  }
+  .site-nav a:hover { background: var(--panel-2); color: var(--ink); }
+  .site-nav a[aria-current="page"] { background: var(--panel-2); color: var(--ink); border-color: rgba(255,255,255,.18); }
+
   /* ---------- header ---------- */
-  header { padding: 44px 0 8px; }
+  header { padding: 22px 0 8px; }
   .title-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
   h1 { font-family: var(--serif); font-weight: 500; font-size: clamp(28px, 4.5vw, 40px); letter-spacing: .01em; }
   .method-btn {
@@ -173,6 +183,11 @@
 <body>
 <div class="wrap">
 
+  <nav class="site-nav" aria-label="Site">
+    <a href="./index.html" aria-current="page">Arena</a>
+    <a href="./query_bench.html">Query Bench</a>
+  </nav>
+
   <header>
     <div class="title-row">
       <h1>Observability Arena</h1>
@@ -229,6 +244,21 @@
       <span class="sw" style="background:rgba(248,113,113,.30)"></span><span>0 — weak</span>
       <span class="sw" style="background:transparent;border:1px solid var(--hairline)"></span><span>5</span>
       <span class="sw" style="background:rgba(74,222,128,.30)"></span><span>10 — strong</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Beyond request latency: the query engine</h2>
+    <p class="h2-sub">The arena above queries projects holding 3 demo traces, so its latency column is dominated by HTTP round-trip. A separate benchmark loads ~10k byte-identical synthetic spans into all five platforms and measures the engine itself.</p>
+    <div class="plat-grid">
+      <div class="plat">
+        <p><span class="lab">The ranking inverts under load.</span> Logfire — 4th on simple request latency — aggregates 10k spans per model in <b>143 ms</b> (SQL GROUP BY) and exports at <b>14,280 rows/s</b>, an order of magnitude ahead of everyone. LangSmith needs <b>5.5 minutes</b> to hand back its own 10k rows (100 rows/page at 10 req/10 s).</p>
+        <p style="margin-top:10px"><a class="method-btn" href="./query_bench.html">See the query benchmark <span aria-hidden="true">→</span></a></p>
+      </div>
+      <div class="plat">
+        <p><span class="lab">Two different races.</span> Phoenix stays the sprinter (fastest small reads, 0.1 s write-to-read, quick filtered scans) but has no server-side aggregation at all — per-model token totals require downloading everything. Speed and analytical power are different axes; the arena score alone shows neither.</p>
+        <p style="margin-top:10px;font-size:12.5px;color:var(--muted)">Corpus: 9,996 spans, seed 43, parity-gated · <span style="font-family:var(--mono)">dataset/</span></p>
+      </div>
     </div>
   </section>
 
