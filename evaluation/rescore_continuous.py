@@ -69,13 +69,34 @@ COHORTS = {
         "extra_judges": {"phoenix": "phoenix_judges.json"},
         "out": "final_scores_continuous_aug12_2026.json",
     },
+    # August 13, 2026: community PR #6 migrated eval_langsmith.py off the
+    # deprecated v1 runs query onto the v2 runs/traces query APIs, so all five
+    # evals were re-run back-to-back (rubric rule 2). LangSmith's dx-friction
+    # gets a mechanical rubric-anchor re-score (generic "Unable to parse
+    # filter" -> structured 400 naming the failure, anchor band 6-8 -> 7),
+    # same provisional treatment as the langfuse v2 overrides.
+    "aug13_2026": {
+        "files": {
+            "logfire": "logfire_aug13_2026.json",
+            "braintrust": "braintrust_aug13_2026.json",
+            "langsmith": "langsmith_aug13_2026.json",
+            "langfuse": "langfuse_aug13_2026.json",
+            "phoenix": "phoenix_aug13_2026.json",
+        },
+        "overrides": {
+            "langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8},
+            "langsmith": {"dx-friction": 7},
+        },
+        "extra_judges": {"phoenix": "phoenix_judges.json"},
+        "out": "final_scores_continuous_aug13_2026.json",
+    },
 }
 
 cohort_name = "jul2026"
 if len(sys.argv) == 3 and sys.argv[1] == "--cohort":
     cohort_name = sys.argv[2]
 elif len(sys.argv) != 1:
-    sys.exit("usage: rescore_continuous.py [--cohort jul2026|aug2026|aug12_2026]")
+    sys.exit("usage: rescore_continuous.py [--cohort jul2026|aug2026|aug12_2026|aug13_2026]")
 cohort = COHORTS[cohort_name]
 
 final = json.loads((RESULTS / "final_scores.json").read_text())
