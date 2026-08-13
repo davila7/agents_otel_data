@@ -1,0 +1,55 @@
+{
+  "platform": "logfire",
+  "evaluated_at": "2026-08-13T13:59:22.883174+00:00",
+  "api": "https://logfire-us.pydantic.dev/v2/query",
+  "token_source": "env LOGFIRE_READ_TOKEN",
+  "metrics": {
+    "auth_works": true,
+    "retrieval_latency_ms": 381.2,
+    "completeness": {
+      "inspected_trace_id": "8f9479a395004b54abd1e009b30851e3",
+      "span_count_tools_trace": 1,
+      "llm_input": false,
+      "llm_output": false,
+      "model_name": false,
+      "token_usage": false,
+      "cost_usd": false,
+      "latency_per_span": true,
+      "tool_call_args": false,
+      "tool_call_results": false,
+      "span_tree": false,
+      "attribute_keys_seen": [
+        "location"
+      ]
+    },
+    "query_flexibility": {
+      "filter_by_time": true,
+      "filter_by_name_or_attribute": true,
+      "aggregation": true,
+      "free_sql_or_dsl": true
+    },
+    "pagination": {
+      "mechanism": "sql-window (LIMIT/OFFSET)",
+      "second_page_verified": true
+    },
+    "export_formats": {
+      "json": true,
+      "ndjson": true,
+      "csv": true,
+      "arrow": true,
+      "parquet": null
+    },
+    "time_to_queryable_s": 5.1,
+    "malformed_query_response": {
+      "status": 400,
+      "body_excerpt": "{\"error\":\"invalid query\",\"details\":{\"error_type\":\"UserError\",\"kind\":\"Error\",\"code\":\"sql_syntax\",\"message\":\"sql parser error: Expected: an SQL statement, found: SELEKT at Line: 1, Column: 1\",\"span\":{\"start\":{\"line\":1,\"column\":1},\"end\":{\"line\":1,\"column\":7}}}}"
+    },
+    "dx_friction": "Auth: bearer token in Authorization header; token used here came from env LOGFIRE_READ_TOKEN. Setup is minimal (single POST endpoint, arbitrary SQL over 'records'). Footguns hit live: (1) 'min_timestamp' is effectively required \u2014 omitting it returned HTTP 422; (2) despite docs, responses default to Arrow binary unless Accept: application/json is set; (3) a per-minute rate limit (HTTP 429 'Rate limit exceeded (minute)') was hit after ~10 rapid queries (2 hits this run; script retries with backoff); (4) JSON responses are row-oriented ({schema, data:[rowdicts]}), easy to consume. Malformed SQL returned HTTP 400; body excerpt in malformed_query_response."
+  },
+  "notes": [
+    "records in last 30d: 10520",
+    "fetched 44 recent spans for completeness check",
+    "server-side aggregation over LLM spans: {'calls': 4506, 'in_tok': 5169130, 'avg_out': 222.21948513093653}",
+    "parquet not advertised by API; not tested beyond documented formats"
+  ]
+}

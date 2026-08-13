@@ -136,8 +136,13 @@ total_records = rows(resp)[0]["n"]
 notes.append(f"records in last 30d: {total_records}")
 
 # ---------------- 2. retrieval latency ----------------
+# The ant-agent project also holds a synthetic 10k-span corpus (dataset/,
+# service_name dataset-pilot*) — exclude it so the eval keeps measuring the
+# three demo traces, as in previous cohorts.
+SYNTH_EXCL = "service_name NOT IN ('dataset-pilot', 'dataset-pilot-probe')"
 LIST_SQL = ("SELECT trace_id, min(start_timestamp) AS started, count(*) AS spans "
-            "FROM records GROUP BY trace_id ORDER BY started DESC LIMIT 20")
+            f"FROM records WHERE {SYNTH_EXCL} "
+            "GROUP BY trace_id ORDER BY started DESC LIMIT 20")
 lat = []
 for _ in range(3):
     s, _, ms = q(LIST_SQL)
@@ -152,7 +157,7 @@ comp = {}
 s, resp, _ = q(
     "SELECT trace_id, span_id, parent_span_id, span_name, message, start_timestamp, "
     "end_timestamp, duration, attributes, otel_scope_name "
-    "FROM records ORDER BY start_timestamp DESC LIMIT 200")
+    f"FROM records WHERE {SYNTH_EXCL} ORDER BY start_timestamp DESC LIMIT 200")
 all_spans = rows(resp) if s == 200 else []
 notes.append(f"fetched {len(all_spans)} recent spans for completeness check")
 

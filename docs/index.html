@@ -206,8 +206,8 @@
     </div>
     <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into five OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
     <div class="meta">
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 12, 2026</span>
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>3 benchmark runs</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 13, 2026</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>4 benchmark runs</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>5 platforms</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>9 weighted criteria</span>
       <span><a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a></span>
@@ -218,7 +218,8 @@
     <div class="run-picker">
       <label for="run-select">Results</label>
       <select id="run-select" aria-label="Benchmark run">
-        <option value="aug12" selected>Latest — Aug 12, 2026 · 5 platforms</option>
+        <option value="aug13" selected>Latest — Aug 13, 2026 · LangSmith v2</option>
+        <option value="aug12">Aug 12, 2026 · 5 platforms</option>
         <option value="aug">Aug 3, 2026 · continuous</option>
         <option value="jul">Jul 2026 · judge panel</option>
       </select>
@@ -232,7 +233,7 @@
       <table class="arena">
         <thead>
           <tr>
-            <th>Rank <span class="inf" data-tip="Rank range|Position across the scoring schemes tried: July banded, July continuous, Aug 3 continuous, Aug 12 continuous.">ⓘ</span></th>
+            <th>Rank <span class="inf" data-tip="Rank range|Position across the scoring schemes tried: July banded, July continuous, and the Aug 3 / Aug 12 / Aug 13 continuous cohorts.">ⓘ</span></th>
             <th>Platform</th>
             <th>Score <span class="inf" data-tip="Score / 100|Bar = this cohort's total. Whisker = range of totals across the three scoring schemes (banded and continuous) — the honest uncertainty band.">ⓘ</span></th>
             <th>Δ vs prev <span class="inf" data-tip="Delta|Change vs the previous run under the same continuous scoring method.">ⓘ</span></th>
@@ -304,8 +305,8 @@
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--langsmith)"></span><span class="p-name">LangSmith</span></div>
         <code>POST /api/v2/runs/query · POST /api/v2/traces/query · X-Api-Key + X-Tenant-Id</code>
-        <p><span class="lab">Strength:</span> expressive filter DSL (<b>eq(is_root, true)</b>) and solid cursor pagination.</p>
-        <p><span class="lab">Friction:</span> projects addressed by UUID (resolve names first); 10 req/10&nbsp;s rate limit; Parquet export is plan-gated; slowest read latency in the August cohort.</p>
+        <p><span class="lab">Strength:</span> expressive filter DSL, cursor pagination (<b>next_cursor</b>), and — since the v2 migration — one of the fastest read paths in the field.</p>
+        <p><span class="lab">Friction:</span> projects addressed by UUID plus an <b>X-Tenant-Id</b> header (resolve both first); Parquet export is plan-gated. The deprecated v1 query path was the platform's old bottleneck — migrating to v2 took retrieval from 1.9&nbsp;s to 123&nbsp;ms and freshness to 0.1&nbsp;s (Aug 13 cohort).</p>
       </div>
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--langfuse)"></span><span class="p-name">Langfuse</span></div>
@@ -352,14 +353,35 @@ const PLATFORMS = {
 // Aug 12 continuous (final_scores_continuous_aug12_2026.json).
 // Phoenix only exists in the Aug 12 cohort.
 const SCHEMES = {
-  logfire:    { totals: [96.40, 93.14, 88.73, 87.11], ranks: [1, 1, 1, 2] },
-  braintrust: { totals: [89.40, 91.00, 88.36, 84.53], ranks: [2, 2, 2, 3] },
-  langsmith:  { totals: [80.93, 76.46, 73.99, 67.25], ranks: [3, 3, 4, 5] },
-  langfuse:   { totals: [72.03, 65.63, 80.83, 79.66], ranks: [4, 4, 3, 4] },
-  phoenix:    { totals: [87.27], ranks: [1] },
+  logfire:    { totals: [96.40, 93.14, 88.73, 87.11, 85.19], ranks: [1, 1, 1, 2, 2] },
+  braintrust: { totals: [89.40, 91.00, 88.36, 84.53, 81.17], ranks: [2, 2, 2, 3, 4] },
+  langsmith:  { totals: [80.93, 76.46, 73.99, 67.25, 82.50], ranks: [3, 3, 4, 5, 3] },
+  langfuse:   { totals: [72.03, 65.63, 80.83, 79.66, 77.94], ranks: [4, 4, 3, 4, 5] },
+  phoenix:    { totals: [87.27, 87.27], ranks: [1, 1] },
 };
 
 const DATA = {
+  aug13: {
+    note: "August 13, 2026 cohort · community PR #6 migrated the LangSmith eval off the deprecated v1 runs query onto the v2 runs/traces query APIs, so all five evals were re-run back-to-back (final_scores_continuous_aug13_2026.json). LangSmith's dx-friction re-scored mechanically 5.67 → 7 (structured 400 vs the old generic parse error). Logfire and Langfuse read paths now share their projects with the 10k synthetic corpus (dataset/) — demo-trace evidence is isolated via filters; Langfuse's 43.5 s ingest lag was measured twice (43–55 s range this session).",
+    ranking: ["phoenix", "logfire", "langsmith", "braintrust", "langfuse"],
+    totals:  { phoenix: 87.27, logfire: 85.19, langsmith: 82.50, braintrust: 81.17, langfuse: 77.94 },
+    // vs Aug 12 continuous totals
+    deltas:  { phoenix: 0.00, logfire: -1.92, langsmith: +15.25, braintrust: -3.36, langfuse: -1.72 },
+    scores: {
+      phoenix:    { "completeness": 10.0, "query-flex": 5.33, "dx-friction": 9.0,  "auth-access": 10.0, "latency": 10.0, "pagination": 10.0, "export-formats": 7.0,  "freshness": 10.0, "otel-fidelity": 10.0 },
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.46, "pagination": 10.0, "export-formats": 10.0, "freshness": 3.53, "otel-fidelity": 10.0 },
+      langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 7.0,  "auth-access": 9.0,  "latency": 8.3,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
+      braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.0,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 7.72, "otel-fidelity": 4.0 },
+      langfuse:   { "completeness": 10.0, "query-flex": 8.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 6.38, "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.0,  "otel-fidelity": 9.0 },
+    },
+    raw: {
+      phoenix:    { latency: 96.3,  freshness: 0.1  },
+      logfire:    { latency: 381.2, freshness: 5.1  },
+      langsmith:  { latency: 123.1, freshness: 0.1  },
+      braintrust: { latency: 407.3, freshness: 0.4  },
+      langfuse:   { latency: 162.3, freshness: 43.5 },
+    },
+  },
   aug12: {
     note: "August 12, 2026 cohort · Phoenix joins, so all five evals were re-run back-to-back in one session (final_scores_continuous_aug12_2026.json). Latency and freshness re-scored on a log scale within the cohort; the other 7 criteria keep judge-panel averages (Phoenix scored by its own 3-judge panel, phoenix_judges.json). The Phoenix–Logfire gap (0.16 pts) is far inside this benchmark's method dependence — read the top as a cluster.",
     ranking: ["phoenix", "logfire", "braintrust", "langfuse", "langsmith"],
@@ -550,7 +572,7 @@ document.addEventListener("mousemove", e => {
   tip.style.left = x + "px"; tip.style.top = y + "px";
 });
 
-render("aug12");
+render("aug13");
 </script>
 </body>
 </html>

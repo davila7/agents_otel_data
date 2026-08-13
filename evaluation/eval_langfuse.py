@@ -87,6 +87,10 @@ since = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:
 rows = get(OBS, limit=200, fields=ALL_FIELDS, fromStartTime=since).json().get("data", [])
 by_trace = {}
 for o in rows:
+    # the project also holds a synthetic 10k-observation corpus (dataset/,
+    # trace roots named synthetic-*) — keep completeness on the demo traces
+    if (o.get("traceName") or "").startswith("synthetic-"):
+        continue
     by_trace.setdefault(o["traceId"], []).append(o)
 metrics["notes"]["recent_trace_names"] = sorted(
     {o.get("traceName") or o.get("name") or "<none>" for o in rows if o.get("isRootObservation")}
@@ -102,12 +106,30 @@ def is_tool_obs(o):
     )
 
 
-tools_trace = next(
-    (obs for obs in by_trace.values() if any(is_tool_obs(o) for o in obs)), None
-)
+# The project also holds a synthetic 10k-observation corpus whose rows can
+# crowd out (and imitate) the demo traces in any recency sample — traceName
+# is null on non-root rows, so name-prefix filtering is not reliable either.
+# Fetch the demo trace deterministically instead: travel-assistant root by
+# name, then its full observation set by traceId.
+tools_trace = None
+root = get(OBS, name="travel-assistant", limit=1, fromStartTime=since).json().get("data", [])
+if root:
+    tid = root[0]["traceId"]
+    tr = get(OBS, traceId=tid, fields=ALL_FIELDS, limit=100).json().get("data", [])
+    if any(is_tool_obs(o) for o in tr):
+        tools_trace = tr
+        metrics["notes"]["completeness_pick"] = (
+            "demo trace fetched deterministically: root name=travel-assistant "
+            "-> traceId -> full observation set (recency sampling is crowded "
+            "out by the synthetic corpus)"
+        )
+if tools_trace is None:
+    tools_trace = next(
+        (obs for obs in by_trace.values() if any(is_tool_obs(o) for o in obs)), None
+    )
 if tools_trace is None:
     metrics["completeness"] = None
-    metrics["notes"]["completeness"] = "no trace with tool observations in last 200 rows"
+    metrics["notes"]["completeness"] = "no demo tool trace found by name or in last 200 rows"
 else:
     obs = tools_trace
     gens = [o for o in obs if o.get("type") == "GENERATION"]
