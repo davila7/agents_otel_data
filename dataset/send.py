@@ -50,6 +50,26 @@ def log(msg: str) -> None:
     print(msg, file=sys.stderr, flush=True)
 
 
+def _partial_success_rejections(body: bytes):
+    """Decode an OTLP ExportTraceServiceResponse and return
+    (rejected_spans, error_message) if the server reported partial success,
+    else None. Empty/unparseable bodies mean full acceptance."""
+    if not body:
+        return None
+    try:
+        from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+            ExportTraceServiceResponse,
+        )
+        resp = ExportTraceServiceResponse()
+        resp.ParseFromString(body)
+    except Exception:  # noqa: BLE001 — non-protobuf body (some backends send JSON)
+        return None
+    ps = resp.partial_success
+    if ps.rejected_spans or ps.error_message:
+        return int(ps.rejected_spans), ps.error_message
+    return None
+
+
 def load_env_file(path: str) -> dict:
     """Parse a .env file into a dict. Never print values."""
     env: dict[str, str] = {}
@@ -177,6 +197,20 @@ def send_platform(platform: str, cfg: dict, chunks: list[dict],
             key = str(r.status_code)
             result["statuses"][key] = result["statuses"].get(key, 0) + 1
             if r.status_code in (200, 202):
+                # A 2xx is NOT proof of full delivery: OTLP servers report
+                # per-span rejections in ExportTraceServiceResponse.
+                # partial_success (Logfire does this for out-of-window
+                # timestamps — see pydantic/logfire#2242, where ignoring the
+                # body made us misreport a documented rejection as a silent
+                # drop). Parse it and surface rejections loudly.
+                rejected = _partial_success_rejections(r.content)
+                if rejected:
+                    n, msg = rejected
+                    result["rejected_spans"] = result.get("rejected_spans", 0) + n
+                    result.setdefault("rejection_messages", []).append(
+                        mask(msg[:300], secrets))
+                    log(f"[{platform}] chunk {i}/{len(chunks)} accepted with "
+                        f"partial_success: {n} span(s) REJECTED — {msg[:160]}")
                 sent = True
                 break
             retryable = r.status_code == 429 or r.status_code >= 500

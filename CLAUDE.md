@@ -62,7 +62,7 @@ cd docs && python3 -m http.server 8765
 
 - Endpoints/headers per platform are codified in `dataset/platforms.json` (env-var placeholders only).
 - **LangSmith rejects spans with `start_time` outside ±24 h of ingest** (HTTP 422) — no historical backfill; generate `--days ≤ 1` corpora anchored at send time.
-- **Logfire silently drops spans older than ~24 h** (HTTP 200, no error) — worse failure mode; same fix.
+- **Logfire also enforces a ~24 h ingest window, but it is NOT silent** (issue pydantic/logfire#2242 was wrong — verified live 2026-08-13): mixed batches return HTTP 200 with `partial_success.rejected_spans` + a detailed error message, all-old batches return HTTP 422, and an error span is injected into the project per rejected payload. Our tooling missed all three signals: `send.py` originally checked only status codes, and `OTLPSpanExporter` returns `SpanExportResult.SUCCESS` on any 200 without surfacing `partial_success`. **Always parse OTLP response bodies before claiming a backend is silent.**
 - **Langfuse OTLP ingest needs `x-langfuse-ingestion-version: 4`** or data lands in the legacy path, invisible to the v2 observations API. Phoenix ingest is protobuf-only (JSON → 415) and routes projects via the `openinference.project.name` resource attribute.
 
 ## Synthetic corpus — state and invariants
