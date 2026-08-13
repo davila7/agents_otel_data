@@ -5,7 +5,7 @@
     "every credential is an ${env:VAR} placeholder resolved at runtime from",
     "the platform's gitignored .env file (env_file below) or the process",
     "environment. Provenance: endpoints and header names are copied from the",
-    "repo's own verified write paths — braintrust/otel_setup.py and",
+    "repo's own verified write paths \u2014 braintrust/otel_setup.py and",
     "langsmith/otel_setup.py (OTLPSpanExporter endpoint+headers used by the",
     "July/August demo runs), the Logfire SDK's default OTLP export target",
     "for the davila7/ant-agent project (logfire-us.pydantic.dev, see",
@@ -56,10 +56,12 @@
     "langfuse": {
       "endpoint": "${env:LANGFUSE_HOST}/api/public/otel/v1/traces",
       "headers": {
-        "Authorization": "Basic ${env:LANGFUSE_BASIC_AUTH}"
+        "Authorization": "Basic ${env:LANGFUSE_BASIC_AUTH}",
+        "x-langfuse-ingestion-version": "4"
       },
       "env_file": "../langfuse/.env",
-      "min_interval_seconds": 0.3
+      "min_interval_seconds": 0.3,
+      "notes": "x-langfuse-ingestion-version:4 is REQUIRED: without it OTLP ingest is accepted but lands in the legacy path, invisible to the v2 observations read API (verified live)."
     },
     "phoenix": {
       "endpoint": "${env:PHOENIX_COLLECTOR_ENDPOINT}/v1/traces",
