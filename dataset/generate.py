@@ -419,9 +419,20 @@ def build_trace(rng: random.Random, ids: IdFactory, scenario: str,
 MAX_TRACE_DURATION_NS = 60 * NS
 
 
-def pick_trace_start(rng: random.Random, window_start_ns: int, days: int) -> int:
-    day = rng.randrange(days)
-    hour = rng.choices(range(24), weights=HOUR_WEIGHTS, k=1)[0]
+def pick_trace_start(rng: random.Random, window_start_ns: int, days: float) -> int:
+    if float(days).is_integer():
+        # integer-day path unchanged: keeps byte-identical output for the
+        # corpora already generated with --days 7 / --days 1
+        day = rng.randrange(int(days))
+        hour = rng.choices(range(24), weights=HOUR_WEIGHTS, k=1)[0]
+    else:
+        # fractional window (e.g. --days 0.5 for platforms with ±24h ingest
+        # limits): draw an hour offset across the whole window, diurnal
+        # weights tiled and truncated to the hours that actually fit
+        total_hours = max(1, int(days * 24))
+        weights = (HOUR_WEIGHTS * (total_hours // 24 + 1))[:total_hours]
+        offset = rng.choices(range(total_hours), weights=weights, k=1)[0]
+        day, hour = offset // 24, offset % 24
     second_of_hour = rng.randrange(3600)
     micro = rng.randrange(1_000_000)
     start = (window_start_ns
@@ -429,7 +440,7 @@ def pick_trace_start(rng: random.Random, window_start_ns: int, days: int) -> int
              + hour * 3600 * NS
              + second_of_hour * NS
              + micro * 1000)
-    latest = window_start_ns + days * 86400 * NS - MAX_TRACE_DURATION_NS
+    latest = window_start_ns + int(days * 86400) * NS - MAX_TRACE_DURATION_NS
     return min(start, latest)
 
 
@@ -453,7 +464,7 @@ def main() -> None:
                              "requested — always read manifest.total_spans, "
                              "never assume the requested value")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--days", type=int, default=7,
+    parser.add_argument("--days", type=float, default=7,
                         help="spread window in days (default 7)")
     parser.add_argument("--out", default="./out")
     parser.add_argument("--format", choices=["pb", "json"], default="pb",
@@ -474,7 +485,7 @@ def main() -> None:
         anchor = datetime.now(timezone.utc).replace(
             hour=0, minute=0, second=0, microsecond=0)
     anchor_ns = int(anchor.timestamp()) * NS
-    window_start_ns = anchor_ns - args.days * 86400 * NS
+    window_start_ns = anchor_ns - int(args.days * 86400) * NS
 
     rng = random.Random(args.seed)
     ids = IdFactory(rng)

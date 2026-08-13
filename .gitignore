@@ -5,4 +5,4 @@ __pycache__/
 .logfire/
 .DS_Store
 .gstack/
-dataset/out/
+dataset/out*/
