@@ -23,7 +23,9 @@ KEY = os.environ.get("LANGSMITH_API_KEY", "")
 PROJECT = os.environ.get("LANGSMITH_PROJECT", "agents-otel-data")
 
 REPO = "/Users/danipower/Proyectos/Github/agents_otel_data"
-RESULTS = os.path.join(REPO, "evaluation", "results", "langsmith.json")
+RESULTS = os.environ.get("EVAL_RESULTS_PATH") or os.path.join(
+    REPO, "evaluation", "results", "langsmith.json"
+)
 
 metrics = {"platform": "langsmith", "notes": {}}
 

@@ -1,0 +1,75 @@
+{
+  "_comment": [
+    "Machine-readable OTLP/HTTP trace endpoints per platform, consumed by",
+    "send.py and mirrored 1:1 by collector.yaml. Secrets NEVER appear here:",
+    "every credential is an ${env:VAR} placeholder resolved at runtime from",
+    "the platform's gitignored .env file (env_file below) or the process",
+    "environment. Provenance: endpoints and header names are copied from the",
+    "repo's own verified write paths \u2014 braintrust/otel_setup.py and",
+    "langsmith/otel_setup.py (OTLPSpanExporter endpoint+headers used by the",
+    "July/August demo runs), the Logfire SDK's default OTLP export target",
+    "for the davila7/ant-agent project (logfire-us.pydantic.dev, see",
+    "CLAUDE.md read-API recon), the Langfuse OTLP endpoint documented at",
+    "/api/public/otel (Basic auth pk-lf/sk-lf, same key pair the v2 read",
+    "API uses), and arize-phoenix-otel's register() which posts to",
+    "PHOENIX_COLLECTOR_ENDPOINT/v1/traces with a Bearer PHOENIX_API_KEY",
+    "(phoenix/01_messages.py docstring).",
+    "LANGFUSE_BASIC_AUTH is base64(LANGFUSE_PUBLIC_KEY:LANGFUSE_SECRET_KEY);",
+    "send.py derives it automatically when unset, the collector needs it",
+    "exported explicitly.",
+    "Project isolation (matches manifest.projects / dataset/README.md):",
+    "logfire routes by token and isolates via resource service.name;",
+    "braintrust routes via x-bt-parent; langsmith via Langsmith-Project;",
+    "langfuse is fixed by the key pair (time-window isolation); phoenix",
+    "routes via the openinference.project.name resource attribute already",
+    "embedded in every chunk."
+  ],
+  "platforms": {
+    "logfire": {
+      "endpoint": "https://logfire-us.pydantic.dev/v1/traces",
+      "headers": {
+        "Authorization": "${env:LOGFIRE_TOKEN}"
+      },
+      "env_file": "../logfire/.env",
+      "min_interval_seconds": 0.5,
+      "notes": "LOGFIRE_TOKEN must be a WRITE token; the read token (pylf_v2, LOGFIRE_READ_TOKEN) is query-only and is rejected by the ingest endpoint."
+    },
+    "braintrust": {
+      "endpoint": "https://api.braintrust.dev/otel/v1/traces",
+      "headers": {
+        "Authorization": "Bearer ${env:BRAINTRUST_API_KEY}",
+        "x-bt-parent": "project_name:otel-dataset-pilot"
+      },
+      "env_file": "../braintrust/.env",
+      "min_interval_seconds": 0.3
+    },
+    "langsmith": {
+      "endpoint": "https://api.smith.langchain.com/otel/v1/traces",
+      "headers": {
+        "x-api-key": "${env:LANGSMITH_API_KEY}",
+        "Langsmith-Project": "otel-dataset-pilot"
+      },
+      "env_file": "../langsmith/.env",
+      "min_interval_seconds": 1.5,
+      "notes": "1.5s pacing honors the 10 req / 10 s API rate limit. LangSmith OTLP ingest rejects spans with start_time outside +/-24h of ingest time (HTTP 422, verified live 2026-08-13) \u2014 no historical backfill; generate a --days 1 corpus with a fresh anchor and send immediately."
+    },
+    "langfuse": {
+      "endpoint": "${env:LANGFUSE_HOST}/api/public/otel/v1/traces",
+      "headers": {
+        "Authorization": "Basic ${env:LANGFUSE_BASIC_AUTH}",
+        "x-langfuse-ingestion-version": "4"
+      },
+      "env_file": "../langfuse/.env",
+      "min_interval_seconds": 0.3,
+      "notes": "x-langfuse-ingestion-version:4 is REQUIRED: without it OTLP ingest is accepted but lands in the legacy path, invisible to the v2 observations read API (verified live)."
+    },
+    "phoenix": {
+      "endpoint": "${env:PHOENIX_COLLECTOR_ENDPOINT}/v1/traces",
+      "headers": {
+        "Authorization": "Bearer ${env:PHOENIX_API_KEY}"
+      },
+      "env_file": "../phoenix/.env",
+      "min_interval_seconds": 0.3
+    }
+  }
+}

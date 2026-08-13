@@ -1,0 +1,41 @@
+{
+  "platform": "phoenix",
+  "evidence_file": "phoenix.json",
+  "date": "2026-08-12",
+  "judges": [
+    "data-engineer lens",
+    "platform-operator lens",
+    "AI-engineer lens"
+  ],
+  "per_judge_scores": {
+    "completeness": [10, 10, 10],
+    "query-flex": [6, 5, 5],
+    "dx-friction": [9, 9, 9],
+    "auth-access": [10, 10, 10],
+    "pagination": [10, 10, 10],
+    "export-formats": [7, 7, 7],
+    "otel-fidelity": [10, 10, 10]
+  },
+  "criterion_averages": {
+    "completeness": 10.0,
+    "query-flex": 5.3333,
+    "dx-friction": 9.0,
+    "auth-access": 10.0,
+    "pagination": 10.0,
+    "export-formats": 7.0,
+    "otel-fidelity": 10.0
+  },
+  "notes": {
+    "scope": "Categorical criteria only; latency and freshness are scored continuously by rescore_continuous.py within the aug12_2026 cohort.",
+    "agreement": "20 of 21 platform-criterion cells unanimous; the only split was query-flex (6/5/5) over whether honored attribute key:value filters lift Phoenix to the top of the 4-6 'client-side aggregation' band.",
+    "consensus_justifications": {
+      "completeness": "All 10 checklist fields present for the 9-span time-assistant-mcp trace: LLM I/O, model, 1113/99 tokens, cost 0.004824, per-span latency, tool args AND results, intact span tree.",
+      "query-flex": "Time/name/attribute/span_kind filters verified honored, but aggregation=false and free_sql_or_dsl=false — the spans endpoint self-describes as 'simple filters (no DSL)', so all analysis is client-side.",
+      "dx-friction": "Single Bearer token, self-served OpenAPI spec, malformed start_time returned HTTP 422 naming loc [query, start_time]; held at 9 because traces are reconstructed client-side by grouping on context.trace_id.",
+      "auth-access": "200 on first correctly-formed call; no plan or scope gating observed.",
+      "pagination": "Cursor mechanism (span Global ID in next_cursor), second page actually fetched, documented 1000 page-size limit.",
+      "export-formats": "Two formats actually received: json and otlp-json (typed OTLP key/value span payloads); CSV Accept header ignored, no columnar format.",
+      "otel-fidelity": "Verbatim gen_ai.* semconv keys alongside OpenInference llm.* keys, 32-hex W3C trace ids, plus an OTLP-JSON export path."
+    }
+  }
+}

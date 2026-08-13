@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Query Bench — 10k corpus</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#161614; --panel:#1c1c1a; --panel-2:#232321;
+    --ink:#f4f4f0; --ink-2:#b6b5ac; --muted:#85847c;
+    --hairline:#2b2b28; --border:rgba(255,255,255,.09);
+    --logfire:#c98500; --braintrust:#3987e5; --langsmith:#d95926;
+    --langfuse:#199e70; --phoenix:#9678e0;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:ui-serif,Georgia,"Times New Roman",serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{background:var(--page)}
+  body{background:var(--page);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 24px 72px}
+  a{color:var(--ink-2)} a:hover{color:var(--ink)}
+  .site-nav{display:flex;gap:8px;padding-top:22px}
+  .site-nav a{display:inline-block;padding:8px 16px;border-radius:9px;border:1px solid var(--border);background:var(--panel);color:var(--ink-2);font:600 13.5px/1 system-ui,sans-serif;text-decoration:none}
+  .site-nav a:hover{background:var(--panel-2);color:var(--ink)}
+  .site-nav a[aria-current="page"]{background:var(--panel-2);color:var(--ink);border-color:rgba(255,255,255,.18)}
+  header{padding:22px 0 10px}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(26px,4vw,36px)}
+  .desc{color:var(--ink-2);margin-top:12px;max-width:740px;font-size:15.5px}
+  .meta{color:var(--muted);font-size:13px;margin-top:12px}
+  .badge{display:inline-block;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--ink-2);font:600 12px/1 var(--mono);padding:5px 9px;margin-left:10px;vertical-align:2px}
+  section{margin-top:40px}
+  h2{font-family:var(--serif);font-weight:500;font-size:21px}
+  .h2-sub{color:var(--muted);font-size:13.5px;margin:6px 0 14px}
+  .card{border:1px solid var(--border);border-radius:12px;background:var(--panel);padding:20px}
+  svg text{font-family:var(--mono)}
+
+  table.t{border-collapse:collapse;width:100%;min-width:720px}
+  table.t th{background:var(--panel-2);color:var(--ink-2);font-size:12.5px;text-align:left;padding:10px 14px;border-bottom:1px solid var(--hairline);white-space:nowrap}
+  table.t td{padding:11px 14px;border-bottom:1px solid var(--hairline);font:500 13.5px var(--mono)}
+  table.t tr:last-child td{border-bottom:0}
+  .scroll-x{overflow-x:auto}
+  .p-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+  .num{text-align:right}
+  th.num{text-align:right}
+  .note{color:var(--muted);font-size:12.5px;margin-top:10px}
+  ul.caveats{margin:10px 0 0 18px;color:var(--ink-2);font-size:13.5px}
+  ul.caveats li{margin-bottom:7px}
+  ul.caveats b{color:var(--ink)}
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--hairline);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="site-nav" aria-label="Site">
+    <a href="./index.html">Arena</a>
+    <a href="./query_bench.html" aria-current="page">Query Bench</a>
+  </nav>
+  <header>
+    <h1>Query Bench</h1>
+    <p class="desc">Query-engine performance over a <b>9,996-span synthetic corpus</b> — byte-identical OTLP data in all five platforms (seed 43, 12-hour window, parity-gated). This measures what the 3-trace cohorts could not: the engine behind the endpoint, not the HTTP round trip.</p>
+    <p class="meta">Aug 13, 2026 · <span style="font-family:var(--mono)">dataset/out_v2/query_bench.json</span> · pipeline: <a href="https://github.com/davila7/agents_otel_data/tree/main/dataset">dataset/</a></p>
+  </header>
+
+  <section>
+    <h2>Filtered scan</h2>
+    <p class="h2-sub">Server-side filter "LLM spans where model = claude-haiku-4-5", first 100 rows · median of 3 · each platform's native filter (SQL / BTQL / DSL / params)</p>
+    <div class="card" id="c-scan"></div>
+  </section>
+
+  <section>
+    <h2>Server-side aggregation</h2>
+    <p class="h2-sub">"Span count + Σ input tokens per model" in one call · median of 3</p>
+    <div class="card" id="c-agg"></div>
+    <p class="note">Phoenix has no server-side aggregation of any kind — its rollup was computed client-side during the export pass (not comparable, shown as ✗). † LangSmith only offers fixed-shape <span style="font-family:var(--mono)">/runs/stats</span> (no GROUP BY): its 6.9 s bar answers a weaker question than the other three.</p>
+  </section>
+
+  <section>
+    <h2>Full-corpus export throughput</h2>
+    <p class="h2-sub">Page through all ~10k rows in the window · one timed pass · log scale — every gridline is 10×</p>
+    <div class="card" id="c-exp"></div>
+  </section>
+
+  <section>
+    <h2>All numbers</h2>
+    <div class="card" style="padding:0"><div class="scroll-x">
+      <table class="t">
+        <thead><tr>
+          <th>Platform</th><th class="num">Scan p50</th><th class="num">Agg p50</th>
+          <th class="num">Export wall</th><th class="num">Rows/s</th><th>Method</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>Read these before quoting the numbers</h2>
+    <div class="card"><ul class="caveats">
+      <li><b>Logfire timings exclude its client-side pacing.</b> The ~10 queries/min rate limit is paid with untimed 7 s sleeps between calls; wall-clock including pacing is 14.7 s for the export. The engine is fast; the meter is small.</li>
+      <li><b>Braintrust scans ~2× the rows.</b> Its pilot project also holds the earlier 7-day corpus, and BTQL filters can't fully hide that from the scan path.</li>
+      <li><b>LangSmith's export number is its rate limit,</b> not its engine: 100 rows/page at 10 req/10 s puts a hard ceiling of ~100 rows/s on any export, and 30 rows/s is what survives in practice.</li>
+      <li><b>Langfuse and Logfire share projects with the live benchmark data</b> (time-window + service-name isolation); the other three use dedicated pilot projects.</li>
+      <li>Single machine, single session, n=3 medians for scans/aggregations, n=1 for exports. 10k spans is the pilot scale — the 200k run is where these gaps should be re-measured.</li>
+    </ul></div>
+  </section>
+
+  <footer>Every number traces to <span style="font-family:var(--mono)">dataset/out_v2/query_bench.json</span>, generated by <span style="font-family:var(--mono)">dataset/query_bench.py</span> against live read APIs.</footer>
+</div>
+
+<script>
+const P = {
+  logfire:    {label:"Logfire",    color:"var(--logfire)"},
+  braintrust: {label:"Braintrust", color:"var(--braintrust)"},
+  langsmith:  {label:"LangSmith",  color:"var(--langsmith)"},
+  langfuse:   {label:"Langfuse",   color:"var(--langfuse)"},
+  phoenix:    {label:"Phoenix",    color:"var(--phoenix)"},
+};
+// transcribed from dataset/out_v2/query_bench.json — do not edit by hand
+const D = {
+  logfire:    {scan:150.4, agg:143.0,  aggKind:"SQL GROUP BY",    exp:0.7,   rps:14280.0, rows:9996,
+               method:"SQL /v2/query, pages of 5000 (pacing untimed)"},
+  braintrust: {scan:816.5, agg:804.9,  aggKind:"BTQL dims/measures", exp:65.6, rps:152.4, rows:9998,
+               method:"BTQL scan/agg; /fetch pages of 1000"},
+  langsmith:  {scan:2176.8,agg:6854.4, aggKind:"fixed-shape stats",  exp:329.0, rps:30.4, rows:9995,
+               method:"runs/query DSL; 100/page at 10 req/10 s"},
+  langfuse:   {scan:260.6, agg:611.3,  aggKind:"metrics API",     exp:7.4,   rps:1351.5, rows:10001,
+               method:"v2 observations name filter; pages of 1000"},
+  phoenix:    {scan:282.0, agg:null,   aggKind:"none (client-side)", exp:5.5, rps:1817.8, rows:9998,
+               method:"REST /spans attribute filter; pages of 1000"},
+};
+
+const fmtMs = v => v >= 1000 ? (v/1000).toFixed(1).replace(/\.0$/,"") + " s" : Math.round(v) + " ms";
+const fmtR  = v => v >= 1000 ? (v/1000).toFixed(1).replace(/\.0$/,"") + "k" : String(v);
+
+// horizontal bar chart, linear scale, direct labels, 4px rounded data end
+function bars(el, key, fmt, flags = {}) {
+  const rows = Object.keys(P)
+    .map(p => ({p, v: D[p][key]}))
+    .sort((a,b) => (a.v ?? Infinity) - (b.v ?? Infinity));
+  const max = Math.max(...rows.map(r => r.v ?? 0));
+  const W = 880, LAB = 108, VAL = 84, BH = 26, GAP = 10;
+  const H = rows.length * (BH + GAP) + 6;
+  const plotW = W - LAB - VAL;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" style="width:100%;height:auto;display:block">`;
+  rows.forEach((r, i) => {
+    const y = i * (BH + GAP) + 3, pl = P[r.p];
+    s += `<text x="${LAB-12}" y="${y+BH/2+4}" text-anchor="end" font-size="13" fill="var(--ink-2)">${pl.label}</text>`;
+    if (r.v == null) {
+      s += `<text x="${LAB}" y="${y+BH/2+4}" font-size="13" fill="var(--muted)">✗ no server-side aggregation</text>`;
+      return;
+    }
+    const w = Math.max(6, plotW * r.v / max);
+    s += `<rect x="${LAB}" y="${y}" width="${w}" height="${BH}" rx="4" fill="${pl.color}"><title>${pl.label}: ${fmt(r.v)}</title></rect>`;
+    const mark = flags[r.p] ? " †" : "";
+    s += `<text x="${LAB+w+10}" y="${y+BH/2+4}" font-size="13" fill="var(--ink)">${fmt(r.v)}${mark}</text>`;
+  });
+  s += `</svg>`;
+  document.getElementById(el).innerHTML = s;
+}
+
+bars("c-scan", "scan", fmtMs);
+bars("c-agg",  "agg",  fmtMs, {langsmith: true});
+
+// log-scale dot plot for rows/s (2.7 orders of magnitude — bars would lie)
+(function dots() {
+  const rows = Object.keys(P).map(p => ({p, v: D[p].rps})).sort((a,b) => b.v - a.v);
+  const W = 880, LAB = 108, R = 7, RH = 34;
+  const H = rows.length * RH + 34;
+  const lo = 10, hi = 20000, plotW = W - LAB - 30;
+  const x = v => LAB + plotW * (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" style="width:100%;height:auto;display:block">`;
+  [10, 100, 1000, 10000].forEach(g => {
+    s += `<line x1="${x(g)}" y1="0" x2="${x(g)}" y2="${H-24}" stroke="var(--hairline)" stroke-width="1"/>`;
+    s += `<text x="${x(g)}" y="${H-8}" text-anchor="middle" font-size="12" fill="var(--muted)">${fmtR(g)}</text>`;
+  });
+  rows.forEach((r, i) => {
+    const y = i * RH + RH/2, pl = P[r.p];
+    s += `<text x="${LAB-12}" y="${y+4}" text-anchor="end" font-size="13" fill="var(--ink-2)">${pl.label}</text>`;
+    s += `<line x1="${LAB}" y1="${y}" x2="${x(r.v)}" y2="${y}" stroke="${pl.color}" stroke-width="2" opacity=".45"/>`;
+    s += `<circle cx="${x(r.v)}" cy="${y}" r="${R}" fill="${pl.color}" stroke="var(--panel)" stroke-width="2"><title>${pl.label}: ${r.v.toLocaleString("en-US")} rows/s</title></circle>`;
+    s += `<text x="${x(r.v)+14}" y="${y+4}" font-size="13" fill="var(--ink)">${fmtR(r.v)} rows/s</text>`;
+  });
+  s += `</svg>`;
+  document.getElementById("c-exp").innerHTML = s;
+})();
+
+// table
+document.getElementById("tbody").innerHTML = Object.keys(P).map(p => {
+  const d = D[p], pl = P[p];
+  return `<tr>
+    <td><span class="p-dot" style="background:${pl.color}"></span>${pl.label}</td>
+    <td class="num">${fmtMs(d.scan)}</td>
+    <td class="num">${d.agg == null ? "✗" : fmtMs(d.agg)}</td>
+    <td class="num">${d.exp} s</td>
+    <td class="num">${d.rps.toLocaleString("en-US")}</td>
+    <td style="font-size:12px;color:var(--ink-2)">${d.method}</td>
+  </tr>`;
+}).join("");
+</script>
+</body>
+</html>
