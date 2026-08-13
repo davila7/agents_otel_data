@@ -1,25 +1,63 @@
 {
   "platform": "logfire",
-  "evaluated_at": "2026-08-13T13:59:22.883174+00:00",
+  "evaluated_at": "2026-08-13T14:27:38.238024+00:00",
   "api": "https://logfire-us.pydantic.dev/v2/query",
   "token_source": "env LOGFIRE_READ_TOKEN",
   "metrics": {
     "auth_works": true,
-    "retrieval_latency_ms": 381.2,
+    "retrieval_latency_ms": 376.6,
     "completeness": {
-      "inspected_trace_id": "8f9479a395004b54abd1e009b30851e3",
-      "span_count_tools_trace": 1,
-      "llm_input": false,
-      "llm_output": false,
-      "model_name": false,
-      "token_usage": false,
-      "cost_usd": false,
+      "inspected_trace_id": "019ffb81d4521d6288c7990fa9a770c0",
+      "span_count_tools_trace": 11,
+      "llm_input": true,
+      "llm_output": true,
+      "model_name": true,
+      "token_usage": true,
+      "cost_usd": true,
       "latency_per_span": true,
-      "tool_call_args": false,
-      "tool_call_results": false,
-      "span_tree": false,
+      "tool_call_args": true,
+      "tool_call_results": true,
+      "span_tree": true,
       "attribute_keys_seen": [
-        "location"
+        "agent_name",
+        "code.filepath",
+        "code.lineno",
+        "fastmcp.component.key",
+        "final_result",
+        "gen_ai.agent.call.id",
+        "gen_ai.agent.name",
+        "gen_ai.aggregated_usage.input_tokens",
+        "gen_ai.aggregated_usage.output_tokens",
+        "gen_ai.conversation.id",
+        "gen_ai.input.messages",
+        "gen_ai.operation.name",
+        "gen_ai.output.messages",
+        "gen_ai.provider.name",
+        "gen_ai.request.model",
+        "gen_ai.response.finish_reasons",
+        "gen_ai.response.id",
+        "gen_ai.response.model",
+        "gen_ai.system",
+        "gen_ai.tool.call.arguments",
+        "gen_ai.tool.call.id",
+        "gen_ai.tool.call.result",
+        "gen_ai.tool.definitions",
+        "gen_ai.tool.name",
+        "gen_ai.usage.input_tokens",
+        "gen_ai.usage.output_tokens",
+        "logfire.metrics",
+        "logfire.msg_template",
+        "mcp.method.name",
+        "model_name",
+        "model_request_parameters",
+        "operation.cost",
+        "pydantic_ai.all_messages",
+        "request",
+        "response",
+        "rpc.jsonrpc.version",
+        "rpc.method",
+        "rpc.system",
+        "server.address"
       ]
     },
     "query_flexibility": {
@@ -39,7 +77,7 @@
       "arrow": true,
       "parquet": null
     },
-    "time_to_queryable_s": 5.1,
+    "time_to_queryable_s": 5.0,
     "malformed_query_response": {
       "status": 400,
       "body_excerpt": "{\"error\":\"invalid query\",\"details\":{\"error_type\":\"UserError\",\"kind\":\"Error\",\"code\":\"sql_syntax\",\"message\":\"sql parser error: Expected: an SQL statement, found: SELEKT at Line: 1, Column: 1\",\"span\":{\"start\":{\"line\":1,\"column\":1},\"end\":{\"line\":1,\"column\":7}}}}"
@@ -47,9 +85,9 @@
     "dx_friction": "Auth: bearer token in Authorization header; token used here came from env LOGFIRE_READ_TOKEN. Setup is minimal (single POST endpoint, arbitrary SQL over 'records'). Footguns hit live: (1) 'min_timestamp' is effectively required \u2014 omitting it returned HTTP 422; (2) despite docs, responses default to Arrow binary unless Accept: application/json is set; (3) a per-minute rate limit (HTTP 429 'Rate limit exceeded (minute)') was hit after ~10 rapid queries (2 hits this run; script retries with backoff); (4) JSON responses are row-oriented ({schema, data:[rowdicts]}), easy to consume. Malformed SQL returned HTTP 400; body excerpt in malformed_query_response."
   },
   "notes": [
-    "records in last 30d: 10520",
-    "fetched 44 recent spans for completeness check",
-    "server-side aggregation over LLM spans: {'calls': 4506, 'in_tok': 5169130, 'avg_out': 222.21948513093653}",
+    "records in last 30d: 10541",
+    "fetched 65 recent spans for completeness check",
+    "server-side aggregation over LLM spans: {'calls': 4512, 'in_tok': 5172731, 'avg_out': 222.06538120567376}",
     "parquet not advertised by API; not tested beyond documented formats"
   ]
 }

@@ -350,10 +350,11 @@ const PLATFORMS = {
 // Totals across the scoring schemes, for the whisker + rank range:
 // July banded (final_scores.json), July continuous (final_scores_continuous.json),
 // Aug 3 continuous (final_scores_continuous_aug2026.json),
-// Aug 12 continuous (final_scores_continuous_aug12_2026.json).
-// Phoenix only exists in the Aug 12 cohort.
+// Aug 12 continuous (final_scores_continuous_aug12_2026.json),
+// Aug 13 continuous (final_scores_continuous_aug13_2026.json).
+// Phoenix joined in the Aug 12 cohort, so it has two scheme entries.
 const SCHEMES = {
-  logfire:    { totals: [96.40, 93.14, 88.73, 87.11, 85.19], ranks: [1, 1, 1, 2, 2] },
+  logfire:    { totals: [96.40, 93.14, 88.73, 87.11, 85.28], ranks: [1, 1, 1, 2, 2] },
   braintrust: { totals: [89.40, 91.00, 88.36, 84.53, 81.17], ranks: [2, 2, 2, 3, 4] },
   langsmith:  { totals: [80.93, 76.46, 73.99, 67.25, 82.50], ranks: [3, 3, 4, 5, 3] },
   langfuse:   { totals: [72.03, 65.63, 80.83, 79.66, 77.94], ranks: [4, 4, 3, 4, 5] },
@@ -362,21 +363,21 @@ const SCHEMES = {
 
 const DATA = {
   aug13: {
-    note: "August 13, 2026 cohort · community PR #6 migrated the LangSmith eval off the deprecated v1 runs query onto the v2 runs/traces query APIs, so all five evals were re-run back-to-back (final_scores_continuous_aug13_2026.json). LangSmith's dx-friction re-scored mechanically 5.67 → 7 (structured 400 vs the old generic parse error). Logfire and Langfuse read paths now share their projects with the 10k synthetic corpus (dataset/) — demo-trace evidence is isolated via filters; Langfuse's 43.5 s ingest lag was measured twice (43–55 s range this session).",
+    note: "August 13, 2026 cohort · community PR #6 migrated the LangSmith eval off the deprecated v1 runs query onto the v2 runs/traces query APIs, so all five evals were re-run back-to-back (final_scores_continuous_aug13_2026.json). LangSmith's dx-friction re-scored mechanically 5.67 → 7 (structured 400 vs the old generic parse error). Logfire and Langfuse read paths now share their projects with the 10k synthetic corpus (dataset/) — demo-trace evidence is fetched deterministically. 0.1 s freshness readings (Phoenix, LangSmith) are bounded by the poll loop's first iteration, not sub-second precision. Langfuse's 43.5 s ingest lag is its worst measured (10.7 s Aug 3, 6.4 s Aug 12) — flagged for re-check.",
     ranking: ["phoenix", "logfire", "langsmith", "braintrust", "langfuse"],
-    totals:  { phoenix: 87.27, logfire: 85.19, langsmith: 82.50, braintrust: 81.17, langfuse: 77.94 },
+    totals:  { phoenix: 87.27, logfire: 85.28, langsmith: 82.50, braintrust: 81.17, langfuse: 77.94 },
     // vs Aug 12 continuous totals
-    deltas:  { phoenix: 0.00, logfire: -1.92, langsmith: +15.25, braintrust: -3.36, langfuse: -1.72 },
+    deltas:  { phoenix: 0.00, logfire: -1.83, langsmith: +15.25, braintrust: -3.36, langfuse: -1.72 },
     scores: {
       phoenix:    { "completeness": 10.0, "query-flex": 5.33, "dx-friction": 9.0,  "auth-access": 10.0, "latency": 10.0, "pagination": 10.0, "export-formats": 7.0,  "freshness": 10.0, "otel-fidelity": 10.0 },
-      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.46, "pagination": 10.0, "export-formats": 10.0, "freshness": 3.53, "otel-fidelity": 10.0 },
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.54, "pagination": 10.0, "export-formats": 10.0, "freshness": 3.56, "otel-fidelity": 10.0 },
       langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 7.0,  "auth-access": 9.0,  "latency": 8.3,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
       braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.0,  "pagination": 10.0, "export-formats": 5.0,  "freshness": 7.72, "otel-fidelity": 4.0 },
       langfuse:   { "completeness": 10.0, "query-flex": 8.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 6.38, "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.0,  "otel-fidelity": 9.0 },
     },
     raw: {
       phoenix:    { latency: 96.3,  freshness: 0.1  },
-      logfire:    { latency: 381.2, freshness: 5.1  },
+      logfire:    { latency: 376.6, freshness: 5.0  },
       langsmith:  { latency: 123.1, freshness: 0.1  },
       braintrust: { latency: 407.3, freshness: 0.4  },
       langfuse:   { latency: 162.3, freshness: 43.5 },

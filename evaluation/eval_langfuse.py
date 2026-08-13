@@ -85,13 +85,6 @@ metrics["notes"]["latency_samples_ms"] = [round(x, 1) for x in lat]
 # v2 returns observation rows; a trace is reconstructed by grouping on traceId.
 since = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 rows = get(OBS, limit=200, fields=ALL_FIELDS, fromStartTime=since).json().get("data", [])
-by_trace = {}
-for o in rows:
-    # the project also holds a synthetic 10k-observation corpus (dataset/,
-    # trace roots named synthetic-*) — keep completeness on the demo traces
-    if (o.get("traceName") or "").startswith("synthetic-"):
-        continue
-    by_trace.setdefault(o["traceId"], []).append(o)
 metrics["notes"]["recent_trace_names"] = sorted(
     {o.get("traceName") or o.get("name") or "<none>" for o in rows if o.get("isRootObservation")}
 )
@@ -123,13 +116,12 @@ if root:
             "-> traceId -> full observation set (recency sampling is crowded "
             "out by the synthetic corpus)"
         )
-if tools_trace is None:
-    tools_trace = next(
-        (obs for obs in by_trace.values() if any(is_tool_obs(o) for o in obs)), None
-    )
+# No recency fallback: any recent-rows sample can contain synthetic traces
+# that imitate the demos (traceName is null on non-root rows, so they cannot
+# be filtered reliably). Unset completeness is better than fake completeness.
 if tools_trace is None:
     metrics["completeness"] = None
-    metrics["notes"]["completeness"] = "no demo tool trace found by name or in last 200 rows"
+    metrics["notes"]["completeness"] = "demo tool trace not found by name"
 else:
     obs = tools_trace
     gens = [o for o in obs if o.get("type") == "GENERATION"]

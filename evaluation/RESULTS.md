@@ -219,17 +219,19 @@ Community [PR #6](https://github.com/davila7/agents_otel_data/pull/6) migrated `
 | Rank | Platform | Total /100 | Latency | Write-to-read |
 |------|----------|-----------:|--------:|--------------:|
 | 1 | Phoenix | **87.27** | 96.3 ms | 0.1 s |
-| 2 | Logfire | 85.19 | 381.2 ms | 5.1 s |
+| 2 | Logfire | 85.28 | 376.6 ms* | 5.0 s |
 | 3 | LangSmith | **82.50** (from 67.25) | 123.1 ms | 0.1 s |
 | 4 | Braintrust | 81.17 | 407.3 ms | 0.4 s |
 | 5 | Langfuse | 77.94 | 162.3 ms | 43.5 s |
+
+*Logfire was re-measured within the session after a completeness-evidence bug was found and fixed (the recency sample missed the demo tool trace; the eval now fetches it deterministically). LangSmith's and Phoenix's 0.1 s freshness readings are bounded by the poll loop's first iteration, not sub-second precision.
 
 Scoring notes, all provisional-mechanical in the aug2026 tradition: LangSmith dx-friction re-scored 5.67 → 7 (the malformed-query probe now returns a structured 400 naming the failure instead of the old generic "Unable to parse filter"; anchor band 6–8); its other categorical criteria keep the July judge averages. Langfuse keeps its v2 overrides.
 
 Two disclosures specific to this cohort:
 
 1. **The Logfire and Langfuse projects now also hold the ~10k-span synthetic corpus** from `dataset/` (their credentials are project-bound, so a separate project wasn't possible). Both evals gained explicit exclusions so completeness evidence stays on the demo traces (SQL `service_name` filter for Logfire; deterministic fetch-by-name for Langfuse, since recency sampling is fully crowded out by the newer corpus). Latency probes keep their original request shape but now run against projects holding 10k+ rows — Braintrust, LangSmith and Phoenix still query 3-trace projects, an asymmetry that will disappear when all benchmark projects carry the corpus.
-2. **Langfuse's 43.5 s ingest lag** is its worst measured yet (10.7 s on Aug 3, 6.4 s on Aug 12); a same-session repeat measured 54.9 s, so it is not a one-off. Whether it relates to the corpus ingestion earlier that day is unknown — flagged for a re-check in the next cohort.
+2. **Langfuse's 43.5 s ingest lag** is its worst measured yet (10.7 s on Aug 3, 6.4 s on Aug 12). Whether it relates to the corpus ingestion earlier that day is unknown — flagged for a re-check in the next cohort.
 
 LangSmith's jump from last to 3rd, driven purely by which endpoint the eval calls, is the benchmark's clearest demonstration yet that **API-path choice is a measurement variable of the same magnitude as vendor performance** — the same lesson as Logfire's credential incident in July and Langfuse's v2 migration in August.
 

@@ -25,8 +25,8 @@
     },
     "raw_inputs": {
       "logfire": {
-        "latency": 381.2,
-        "freshness": 5.1
+        "latency": 376.6,
+        "freshness": 5.0
       },
       "langfuse": {
         "latency": 162.3,
@@ -64,10 +64,10 @@
         "query-flex": 10.0,
         "dx-friction": 8.0,
         "auth-access": 10.0,
-        "latency": 0.46,
+        "latency": 0.54,
         "pagination": 10.0,
         "export-formats": 10.0,
-        "freshness": 3.53,
+        "freshness": 3.56,
         "otel-fidelity": 10.0
       },
       "weighted_contributions": {
@@ -75,13 +75,13 @@
         "query-flex": 20.0,
         "dx-friction": 8.0,
         "auth-access": 8.0,
-        "latency": 0.37,
+        "latency": 0.43,
         "pagination": 8.0,
         "export-formats": 8.0,
-        "freshness": 2.82,
+        "freshness": 2.85,
         "otel-fidelity": 5.0
       },
-      "total_score": 85.19,
+      "total_score": 85.28,
       "banded_total_score": 96.4
     },
     "langfuse": {
@@ -198,7 +198,7 @@
     {
       "rank": 2,
       "platform": "logfire",
-      "total_score": 85.19
+      "total_score": 85.28
     },
     {
       "rank": 3,
