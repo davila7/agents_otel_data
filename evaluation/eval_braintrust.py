@@ -98,8 +98,14 @@ LIST_SQL = (
 )
 lat = []
 for _ in range(3):
-    t0 = time.perf_counter()
-    rr = S.post(f"{API}/btql", json={"query": LIST_SQL}, timeout=30)
+    # retry 429s OUTSIDE the timed window (rubric latency methodology);
+    # routing through sql() would count its backoff sleep in the sample
+    while True:
+        t0 = time.perf_counter()
+        rr = S.post(f"{API}/btql", json={"query": LIST_SQL}, timeout=30)
+        if rr.status_code != 429:
+            break
+        time.sleep(min(float(rr.headers.get("retry-after") or 2), 30))
     rr.raise_for_status()
     lat.append((time.perf_counter() - t0) * 1000)
 metrics["retrieval_latency_ms"] = round(statistics.median(lat), 1)
