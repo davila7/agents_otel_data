@@ -90,6 +90,27 @@ COHORTS = {
         "extra_judges": {"phoenix": "phoenix_judges.json"},
         "out": "final_scores_continuous_aug13_2026.json",
     },
+    # August 15, 2026: PRs #7/#12 moved the Braintrust eval to SQL over /btql
+    # with fmt-based exports, so all five evals were re-run back-to-back.
+    # Braintrust overrides, mechanical per rubric anchors against captured
+    # responses: export-formats 10 (json + ndjson + parquet actually received,
+    # parquet is columnar -> >=3-formats anchor); dx-friction unchanged.
+    "aug15_2026": {
+        "files": {
+            "logfire": "logfire_aug15_2026.json",
+            "braintrust": "braintrust_aug15_2026.json",
+            "langsmith": "langsmith_aug15_2026.json",
+            "langfuse": "langfuse_aug15_2026.json",
+            "phoenix": "phoenix_aug15_2026.json",
+        },
+        "overrides": {
+            "langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8},
+            "langsmith": {"dx-friction": 7},
+            "braintrust": {"export-formats": 10},
+        },
+        "extra_judges": {"phoenix": "phoenix_judges.json"},
+        "out": "final_scores_continuous_aug15_2026.json",
+    },
 }
 
 cohort_name = "jul2026"

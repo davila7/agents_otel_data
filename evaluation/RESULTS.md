@@ -235,6 +235,27 @@ Two disclosures specific to this cohort:
 
 LangSmith's jump from last to 3rd, driven purely by which endpoint the eval calls, is the benchmark's clearest demonstration yet that **API-path choice is a measurement variable of the same magnitude as vendor performance** — the same lesson as Logfire's credential incident in July and Langfuse's v2 migration in August.
 
+## August 15, 2026: Braintrust Moves to SQL over /btql
+
+[PR #7](https://github.com/davila7/agents_otel_data/pull/7) (by Braintrust's dpguthrie) plus hardening in [PR #12](https://github.com/davila7/agents_otel_data/pull/12) rewrote `eval_braintrust.py`: standard SQL over `POST /btql` (replacing the BTQL pipe syntax) and export probes via the `fmt` parameter validated by body signature. All five evals were re-run back-to-back on 2026-08-15 (`results/*_aug15_2026.json`):
+
+| Rank | Platform | Total /100 | Latency | Write-to-read |
+|------|----------|-----------:|--------:|--------------:|
+| 1 | Phoenix | **87.27** | 93.5 ms | 0.1 s |
+| 2 | Braintrust | **86.20** (from 81.17) | 268.7 ms | 0.4 s |
+| 3 | LangSmith | 83.54 | 98.8 ms | 0.1 s |
+| 4 | Logfire | 82.94 | 356.6 ms | 5.1 s |
+| 5 | Langfuse | 77.42 | 165.4 ms | 8.6 s |
+
+**What moved Braintrust:** export-formats re-scored mechanically 5 → 10 — `fmt=json/jsonl/parquet` all delivered real payloads (parquet verified by `PAR1` magic bytes; csv returns 400). It is now the second platform after Logfire with a columnar export. Query-flex was already 10; the SQL surface replaces the pipe syntax it was scored on.
+
+**Two integrity notes from this cohort:**
+
+1. **Demo traces age out of Braintrust.** The July demo traces disappeared from the project between the Aug 3 and Aug 12 cohorts, which silently degraded the Aug 12/13 Braintrust completeness evidence (scores were unaffected — completeness keeps judge averages — but the evidence files show `02_tools: false`). Demos were re-run, and the eval now fetches demo traces deterministically by span name, the same guard added to Logfire and Langfuse.
+2. **Langfuse's freshness returned to 8.6 s** after Aug 13's 43.5 s outlier — consistent with its measured 6–44 s fluctuation range rather than a persistent regression.
+
+The 0.1 s freshness readings (Phoenix, LangSmith) remain bounded by the poll loop's first iteration. Logfire's 4th place is cohort-normalization at work: its 356.6 ms / 5.1 s are the worst measured values in this cohort, so both compress toward 0 despite being absolutely reasonable — its 82-point judge-scored base is unchanged and it still leads the query-engine benchmark by an order of magnitude.
+
 ## Caveats
 
 - **This report supersedes an earlier draft** in which Logfire was largely untestable; the final judge scores below are based on a successful fresh run where every Logfire read-path capability was exercised and reproduced.

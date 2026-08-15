@@ -1,0 +1,104 @@
+{
+  "platform": "langfuse",
+  "api": "observations v2",
+  "notes": {
+    "latency_samples_ms": [
+      165.4,
+      158.9,
+      509.4
+    ],
+    "recent_trace_names": [
+      "chat-hello",
+      "synthetic-chat-hello",
+      "synthetic-time-assistant-mcp",
+      "synthetic-travel-assistant"
+    ],
+    "completeness_pick": "demo trace fetched deterministically: root name=travel-assistant -> traceId -> full observation set (recency sampling is crowded out by the synthetic corpus)",
+    "generation_metadata_keys": [
+      "attributes.gen_ai.agent.call.id",
+      "attributes.gen_ai.agent.name",
+      "attributes.gen_ai.conversation.id",
+      "attributes.gen_ai.operation.name",
+      "attributes.gen_ai.provider.name",
+      "attributes.gen_ai.request.model",
+      "attributes.gen_ai.response.finish_reasons",
+      "attributes.gen_ai.response.id",
+      "attributes.gen_ai.response.model",
+      "attributes.gen_ai.system",
+      "attributes.gen_ai.usage.details.cache_creation_input_tokens",
+      "attributes.gen_ai.usage.details.cache_read_input_tokens",
+      "attributes.gen_ai.usage.input_tokens",
+      "attributes.gen_ai.usage.output_tokens",
+      "attributes.langfuse.trace.tags",
+      "attributes.logfire.json_schema",
+      "attributes.model_request_parameters",
+      "attributes.operation.cost",
+      "attributes.server.address",
+      "resourceAttributes.langfuse.environment",
+      "resourceAttributes.service.instance.id",
+      "resourceAttributes.service.name",
+      "resourceAttributes.telemetry.sdk.language",
+      "resourceAttributes.telemetry.sdk.name",
+      "resourceAttributes.telemetry.sdk.version",
+      "scope.name",
+      "scope.version"
+    ],
+    "trace_id_format": "32-hex (W3C-style)",
+    "chat_hello_observations_found": 5,
+    "advanced_filter_probe": "filter param accepted and honored",
+    "metrics_api_sample": [
+      {
+        "name": "synthetic-chat-hello",
+        "count_count": "2893"
+      },
+      {
+        "name": "synthetic-travel-assistant",
+        "count_count": "1276"
+      },
+      {
+        "name": "synthetic-time-assistant-mcp",
+        "count_count": "754"
+      }
+    ],
+    "free_expression_probe": "HTTP 400: {\"message\":\"Invalid metric count(*) + 1. Must be one of count,observationsCount,scoresCount,uniqueUserIds,uniqueSessionIds,latency,totalTokens,totalCost\",\"error\":\"InvalidRequestError\"}",
+    "csv_accept_header_result": "HTTP 200, content-type=application/json; charset=utf-8",
+    "malformed_query_response": "HTTP 400: {\"message\":\"Invalid request data\",\"error\":[{\"origin\":\"string\",\"code\":\"invalid_format\",\"format\":\"datetime\",\"pattern\":\"/^(?:(?:\\\\d\\\\d[2468][048]|\\\\d\\\\d[13579][26]|\\\\d\\\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\\\d|30)|("
+  },
+  "auth_works": true,
+  "retrieval_latency_ms": 165.4,
+  "completeness": {
+    "trace_id": "33515eef80ab9ff5e95fc1b9c702c5dc",
+    "trace_name": null,
+    "llm_input": true,
+    "llm_output": true,
+    "model_name": "claude-sonnet-4-5-20250929",
+    "token_usage": {
+      "input": 958,
+      "output": 157,
+      "present": true
+    },
+    "cost_usd": 0.005228999999,
+    "latency_per_span": true,
+    "tool_call_args": true,
+    "tool_call_results": true,
+    "span_tree": true,
+    "span_count": 8
+  },
+  "query_flexibility": {
+    "filter_by_time": true,
+    "filter_by_name_or_attribute": true,
+    "advanced_json_filter": true,
+    "aggregation": true,
+    "free_sql_or_dsl": false
+  },
+  "pagination": {
+    "mechanism": "cursor (base64 in meta.cursor)",
+    "second_page_fetched": true,
+    "page_size_limit_documented": 1000
+  },
+  "export_formats": [
+    "json"
+  ],
+  "time_to_queryable_s": 8.6,
+  "dx_friction": "Auth is simple HTTP Basic (public key as user, secret key as password); no token exchange needed. The v2 observations endpoint uses cursor pagination (meta.cursor) and selective field groups via ?fields=, which keeps default responses lean but means I/O payloads require explicit opt-in and traces must be reconstructed client-side by grouping rows on traceId. The metrics API still takes a URL-encoded JSON query which is awkward to hand-build. Malformed fromStartTime returned HTTP 400 with a structured error body naming the invalid field."
+}
