@@ -142,10 +142,31 @@ def find_trace(pred):
     return best[1] if best else None
 
 
+def fetch_trace_by_span_name(name):
+    """Deterministic lookup: find the newest trace containing a span with this
+    name and pull all its rows — the recency window can miss old demo traces
+    (they age out of the project; observed between the Aug 3 and Aug 12
+    cohorts) or be crowded out by fresher freshness-probe traces."""
+    r = sql(
+        f"SELECT root_span_id {FROM} {SINCE} "
+        f"AND span_attributes.name = '{name}' ORDER BY created DESC LIMIT 1"
+    )
+    if r.status_code != 200 or not r.json().get("data"):
+        return None
+    rsid = r.json()["data"][0]["root_span_id"]
+    r2 = sql(f"SELECT {FIELDS} {FROM} {SINCE} AND root_span_id = '{rsid}'")
+    rows = r2.json().get("data", []) if r2.status_code == 200 else []
+    if rows:
+        traces[rsid] = rows
+        return rows
+    return None
+
+
 tools_trace = find_trace(
     lambda s: "get_weather" in span_name(s) or "get_currency" in span_name(s)
-)
-mcp_trace = find_trace(lambda s: "get_current_time" in span_name(s))
+) or fetch_trace_by_span_name("get_weather")
+mcp_trace = (find_trace(lambda s: "get_current_time" in span_name(s))
+             or fetch_trace_by_span_name("get_current_time"))
 msg_trace = find_trace(lambda s: "anthropic.messages.create" in span_name(s))
 metrics["notes"]["traces_found"] = {
     "01_messages": msg_trace is not None,
@@ -335,6 +356,9 @@ except Exception as exc:  # noqa: BLE001
 # ------------------------------------------------------------- 8. dx friction
 r_bad = sql(f"SELECT id {FROM} LIMT 1")  # intentional typo
 bad_snippet = r_bad.text[:200]
+metrics["notes"]["malformed_query_response"] = (
+    f"HTTP {r_bad.status_code}: {r_bad.text[:300]}"
+)
 metrics["dx_friction"] = (
     "Auth is a single Bearer API key; the /btql endpoint worked on the first try with "
     "just the project id. SQL syntax is standard enough to write without dialect docs, "
