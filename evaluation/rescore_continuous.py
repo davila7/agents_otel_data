@@ -52,20 +52,67 @@ COHORTS = {
         "overrides": {"langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8}},
         "out": "final_scores_continuous_aug2026.json",
     },
+    # August 12, 2026: Phoenix joins the benchmark, so all five evals were
+    # re-run back-to-back in one session (rubric rule 2). The four incumbents
+    # keep their judge-panel categorical averages (plus the langfuse v2
+    # overrides); Phoenix's categorical criteria come from its own 3-judge
+    # panel in phoenix_judges.json, scored against evidence in phoenix.json.
+    "aug12_2026": {
+        "files": {
+            "logfire": "logfire_aug12_2026.json",
+            "braintrust": "braintrust_aug12_2026.json",
+            "langsmith": "langsmith_aug12_2026.json",
+            "langfuse": "langfuse_aug12_2026.json",
+            "phoenix": "phoenix.json",
+        },
+        "overrides": {"langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8}},
+        "extra_judges": {"phoenix": "phoenix_judges.json"},
+        "out": "final_scores_continuous_aug12_2026.json",
+    },
+    # August 13, 2026: community PR #6 migrated eval_langsmith.py off the
+    # deprecated v1 runs query onto the v2 runs/traces query APIs, so all five
+    # evals were re-run back-to-back (rubric rule 2). LangSmith's dx-friction
+    # gets a mechanical rubric-anchor re-score (generic "Unable to parse
+    # filter" -> structured 400 naming the failure, anchor band 6-8 -> 7),
+    # same provisional treatment as the langfuse v2 overrides.
+    "aug13_2026": {
+        "files": {
+            "logfire": "logfire_aug13_2026.json",
+            "braintrust": "braintrust_aug13_2026.json",
+            "langsmith": "langsmith_aug13_2026.json",
+            "langfuse": "langfuse_aug13_2026.json",
+            "phoenix": "phoenix_aug13_2026.json",
+        },
+        "overrides": {
+            "langfuse": {"pagination": 10, "otel-fidelity": 9, "query-flex": 8},
+            "langsmith": {"dx-friction": 7},
+        },
+        "extra_judges": {"phoenix": "phoenix_judges.json"},
+        "out": "final_scores_continuous_aug13_2026.json",
+    },
 }
 
 cohort_name = "jul2026"
 if len(sys.argv) == 3 and sys.argv[1] == "--cohort":
     cohort_name = sys.argv[2]
 elif len(sys.argv) != 1:
-    sys.exit("usage: rescore_continuous.py [--cohort jul2026|aug2026]")
+    sys.exit("usage: rescore_continuous.py [--cohort jul2026|aug2026|aug12_2026|aug13_2026]")
 cohort = COHORTS[cohort_name]
 
 final = json.loads((RESULTS / "final_scores.json").read_text())
 weights = final["weights"]
 
+# judge-panel categorical averages per platform: incumbents from the frozen
+# final_scores.json, additions from their own judge files (never merged back)
+judge_averages = {n: d["criterion_averages"] for n, d in final["platforms"].items()}
+banded_totals = {n: d["total_score"] for n, d in final["platforms"].items()}
+for name, jf in cohort.get("extra_judges", {}).items():
+    j = json.loads((RESULTS / jf).read_text())
+    judge_averages[name] = j["criterion_averages"]
+    banded_totals[name] = None  # not part of the frozen banded record
+
 raw = {}
-for name in final["platforms"]:
+for name in judge_averages:
     d = json.loads((RESULTS / cohort["files"][name]).read_text())
     m = d.get("metrics", d)  # logfire nests under "metrics", others are flat
     raw[name] = {
@@ -98,8 +145,8 @@ out = {
     "platforms": {},
 }
 
-for name, data in final["platforms"].items():
-    avgs = dict(data["criterion_averages"])
+for name, averages in judge_averages.items():
+    avgs = dict(averages)
     avgs.update(cohort["overrides"].get(name, {}))
     for c in CONTINUOUS:
         avgs[c] = cont[c][name]
@@ -108,7 +155,7 @@ for name, data in final["platforms"].items():
         "criterion_scores": {c: round(v, 2) for c, v in avgs.items()},
         "weighted_contributions": {c: round(v, 2) for c, v in contrib.items()},
         "total_score": round(sum(contrib.values()), 2),  # round only at display
-        "banded_total_score": data["total_score"],
+        "banded_total_score": banded_totals[name],
     }
 
 ranking = sorted(out["platforms"].items(), key=lambda kv: -kv[1]["total_score"])
@@ -122,7 +169,8 @@ out["winner"] = ranking[0][0]
 
 print(f"{'platform':<12} {'banded':>7} {'continuous':>11}  latency(ms)  freshness(s)")
 for p, d in ranking:
+    banded = d["banded_total_score"] if d["banded_total_score"] is not None else "—"
     print(
-        f"{p:<12} {d['banded_total_score']:>7} {d['total_score']:>11}"
+        f"{p:<12} {banded:>7} {d['total_score']:>11}"
         f"  {raw[p]['latency']:>10}  {raw[p]['freshness']:>11}"
     )

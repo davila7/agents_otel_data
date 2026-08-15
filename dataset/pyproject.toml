@@ -1,0 +1,10 @@
+[project]
+name = "dataset"
+version = "0.1.0"
+description = "Deterministic synthetic OTLP trace generator for the observability benchmark"
+requires-python = ">=3.12"
+dependencies = [
+    "opentelemetry-proto>=1.25.0",
+    "protobuf>=4.25.0",
+    "requests>=2.34.2",
+]

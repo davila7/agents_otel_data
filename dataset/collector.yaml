@@ -1,0 +1,60 @@
+# OpenTelemetry Collector config mirroring dataset/platforms.json 1:1.
+# Alternative send path to send.py: point any OTLP source at the receiver
+# below and the collector fans the same spans out to every platform.
+#
+# Secrets are referenced ONLY as ${env:VAR} — export them from the
+# per-platform gitignored .env files before launching, e.g.:
+#   set -a; source ../logfire/.env ../braintrust/.env ../langsmith/.env \
+#       ../langfuse/.env ../phoenix/.env; set +a
+#   export LANGFUSE_BASIC_AUTH=$(printf '%s:%s' "$LANGFUSE_PUBLIC_KEY" \
+#       "$LANGFUSE_SECRET_KEY" | base64)
+#
+# Endpoints/headers must stay byte-identical to platforms.json (the parity
+# contract): if you change one file, change both.
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 127.0.0.1:4318
+
+exporters:
+  otlphttp/logfire:
+    traces_endpoint: https://logfire-us.pydantic.dev/v1/traces
+    headers:
+      Authorization: ${env:LOGFIRE_TOKEN}
+  otlphttp/braintrust:
+    traces_endpoint: https://api.braintrust.dev/otel/v1/traces
+    headers:
+      Authorization: Bearer ${env:BRAINTRUST_API_KEY}
+      x-bt-parent: project_name:otel-dataset-pilot
+  otlphttp/langsmith:
+    traces_endpoint: https://api.smith.langchain.com/otel/v1/traces
+    headers:
+      x-api-key: ${env:LANGSMITH_API_KEY}
+      Langsmith-Project: otel-dataset-pilot
+  otlphttp/langfuse:
+    traces_endpoint: ${env:LANGFUSE_HOST}/api/public/otel/v1/traces
+    headers:
+      Authorization: Basic ${env:LANGFUSE_BASIC_AUTH}
+  otlphttp/phoenix:
+    traces_endpoint: ${env:PHOENIX_COLLECTOR_ENDPOINT}/v1/traces
+    headers:
+      Authorization: Bearer ${env:PHOENIX_API_KEY}
+
+processors:
+  batch:
+    send_batch_size: 1000
+    timeout: 2s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - otlphttp/logfire
+        - otlphttp/braintrust
+        - otlphttp/langsmith
+        - otlphttp/langfuse
+        - otlphttp/phoenix

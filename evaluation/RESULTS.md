@@ -182,6 +182,59 @@ Note the session-to-session variance this exposes: with identical scripts, LangS
 
 **What the re-run changes.** Langfuse moves from a distant 4th to 3rd, ~8 points behind a Logfire–Braintrust top pair that is now separated by 0.37 points — the vendor's improvements are real and large. In banded terms Langfuse's provisional re-score is ≈87.2 (from 72.03). Two honesty notes: (1) the categorical re-scores are single-scorer rubric-anchor applications, not a fresh three-judge panel — treated as provisional; (2) Langfuse's 10.7 s freshness, though 4× better than July, is the worst in the August cohort, so cohort min-max assigns it 0 — the banded view (8/10) is kinder and arguably fairer here. A follow-up probe (3 extra emit+poll cycles, 1 s polling; see `notes.freshness_followup_samples_s` in `langfuse_v2.json`) measured 20.7 / 7.0 / 6.3 s — the lag genuinely fluctuates in the ~6–21 s range, consistent with queue-and-batch ingestion rather than a synchronous write path. The July tables above remain the frozen record of the original evaluation.
 
+## August 12, 2026: Phoenix Joins the Arena
+
+Arize Phoenix (Phoenix Cloud space, project `agents-otel-data`) was added as a fifth platform: the same three demos were instrumented via `arize-phoenix-otel` + OpenInference (`phoenix/`), and a new `eval_phoenix.py` exercises the Phoenix REST API (`/v1/projects/{id}/spans`, `/traces`, `/spans/otlpv1`; Bearer auth; the whole surface is one OpenAPI spec served from the space itself). Evidence: [`results/phoenix.json`](results/phoenix.json).
+
+**Same-session cohort (rubric rule 2).** Adding a platform re-opens the cohort, so all five evals were re-run back-to-back on 2026-08-12 (`results/*_aug12_2026.json` + `results/phoenix.json`):
+
+| Platform | Latency (median of 3) | Write-to-read |
+|----------|----------------------:|--------------:|
+| Phoenix | **87.5 ms** | **0.1 s** |
+| Langfuse (v2) | 137.9 ms | 6.4 s |
+| Braintrust | 322.9 ms | 0.5 s |
+| Logfire | 326.1 ms | 4.9 s |
+| LangSmith | 1935.5 ms | 4.4 s |
+
+**Phoenix judge panel.** Its seven categorical criteria were scored by a fresh 3-judge panel (same lenses as July) against the captured evidence — [`results/phoenix_judges.json`](results/phoenix_judges.json). 20 of 21 cells were unanimous: completeness 10 (full checklist on the 9-span MCP trace, including `operation.cost` and tool args/results), dx-friction 9 (single Bearer token, self-served OpenAPI spec, structured 422 naming the bad parameter), auth-access 10, pagination 10 (cursor, second page fetched), otel-fidelity 10 (verbatim `gen_ai.*` keys alongside OpenInference `llm.*`, W3C 32-hex ids, OTLP-JSON export path), export-formats 7 (json + otlp-json; CSV Accept header ignored), query-flex 5.33 (the split cell, 6/5/5: time/name/attribute/span_kind filters all honored, but no server-side aggregation and no SQL/DSL — the spans endpoint self-describes as "simple filters, no DSL").
+
+**August 12 continuous scores** (`rescore_continuous.py --cohort aug12_2026` → [`results/final_scores_continuous_aug12_2026.json`](results/final_scores_continuous_aug12_2026.json); incumbents keep their judge averages plus the Langfuse v2 overrides):
+
+| Rank | Platform | Total /100 |
+|------|----------|-----------:|
+| 1 | Phoenix | **87.27** |
+| 2 | Logfire | 87.11 |
+| 3 | Braintrust | 84.53 |
+| 4 | Langfuse | 79.66 |
+| 5 | LangSmith | 67.25 |
+
+**Read the top of that table as a cluster, not a coronation.** Phoenix edges Logfire by 0.16 points — far inside this benchmark's known method-dependence — and its lead is manufactured exactly where cohort min-max normalization is most sensitive: Phoenix is the best observed value on *both* continuous criteria, so it banks a perfect 10 on each, while its 0.1 s freshness stretches the log scale and compresses everyone else toward 0 (Logfire's 4.9 s, band 10/10 in July terms, becomes 0.64/10 here). The durable, method-independent readings are: Phoenix delivers the fastest read path and write-to-read lag measured in any cohort of this benchmark, ties Logfire on OTel fidelity (the only two platforms returning `gen_ai.*` verbatim), and trades that against the weakest query surface of the top three (no server-side aggregation, no SQL/DSL, weight-20 criterion at 5.33). Logfire remains the strongest analysis/export platform; Braintrust remains the all-rounder. Session variance is also visible again: LangSmith's median latency was 464 → 1305 → 1936 ms across the three cohorts on identical scripts.
+
+Two Phoenix-specific disclosures: its 0.1 s freshness is a single measurement whose granularity is bounded by the poll loop's first iteration (the true lag is somewhere in 0–2 s; SimpleSpanProcessor exports synchronously, so near-zero lag is plausible but the precision isn't); and dropping Phoenix from the cohort returns the remaining four platforms to essentially their August 3 ordering — cohort membership still moves the continuous numbers, as disclosed since July.
+
+## August 13, 2026: LangSmith Migrates to the v2 Query APIs
+
+Community [PR #6](https://github.com/davila7/agents_otel_data/pull/6) migrated `eval_langsmith.py` off the deprecated v1 runs query onto the current v2 endpoints (`POST /v2/runs/query` + `POST /v2/traces/query`, `X-Api-Key` + `X-Tenant-Id`, `next_cursor` pagination). The effect is dramatic and vendor-side: **the deprecated v1 path was LangSmith's bottleneck, not its engine** — retrieval latency went 1,935.5 → 123.1 ms and write-to-read lag 4.4 → 0.1 s on identical scenarios. Per rubric rule 2, all five evals were re-run back-to-back on 2026-08-13 (`results/*_aug13_2026.json`):
+
+| Rank | Platform | Total /100 | Latency | Write-to-read |
+|------|----------|-----------:|--------:|--------------:|
+| 1 | Phoenix | **87.27** | 96.3 ms | 0.1 s |
+| 2 | Logfire | 85.28 | 376.6 ms* | 5.0 s |
+| 3 | LangSmith | **82.50** (from 67.25) | 123.1 ms | 0.1 s |
+| 4 | Braintrust | 81.17 | 407.3 ms | 0.4 s |
+| 5 | Langfuse | 77.94 | 162.3 ms | 43.5 s |
+
+*Logfire was re-measured within the session after a completeness-evidence bug was found and fixed (the recency sample missed the demo tool trace; the eval now fetches it deterministically). LangSmith's and Phoenix's 0.1 s freshness readings are bounded by the poll loop's first iteration, not sub-second precision.
+
+Scoring notes, all provisional-mechanical in the aug2026 tradition: LangSmith dx-friction re-scored 5.67 → 7 (the malformed-query probe now returns a structured 400 naming the failure instead of the old generic "Unable to parse filter"; anchor band 6–8); its other categorical criteria keep the July judge averages. Langfuse keeps its v2 overrides.
+
+Two disclosures specific to this cohort:
+
+1. **The Logfire and Langfuse projects now also hold the ~10k-span synthetic corpus** from `dataset/` (their credentials are project-bound, so a separate project wasn't possible). Both evals gained explicit exclusions so completeness evidence stays on the demo traces (SQL `service_name` filter for Logfire; deterministic fetch-by-name for Langfuse, since recency sampling is fully crowded out by the newer corpus). Latency probes keep their original request shape but now run against projects holding 10k+ rows — Braintrust, LangSmith and Phoenix still query 3-trace projects, an asymmetry that will disappear when all benchmark projects carry the corpus.
+2. **Langfuse's 43.5 s ingest lag** is its worst measured yet (10.7 s on Aug 3, 6.4 s on Aug 12). Whether it relates to the corpus ingestion earlier that day is unknown — flagged for a re-check in the next cohort.
+
+LangSmith's jump from last to 3rd, driven purely by which endpoint the eval calls, is the benchmark's clearest demonstration yet that **API-path choice is a measurement variable of the same magnitude as vendor performance** — the same lesson as Logfire's credential incident in July and Langfuse's v2 migration in August.
+
 ## Caveats
 
 - **This report supersedes an earlier draft** in which Logfire was largely untestable; the final judge scores below are based on a successful fresh run where every Logfire read-path capability was exercised and reproduced.

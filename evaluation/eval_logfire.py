@@ -21,7 +21,9 @@ import requests
 BASE = "https://logfire-us.pydantic.dev"
 QUERY_URL = BASE + "/v2/query"
 REPO = "/Users/danipower/Proyectos/Github/agents_otel_data"
-RESULTS_PATH = os.path.join(REPO, "evaluation", "results", "logfire.json")
+RESULTS_PATH = os.environ.get("EVAL_RESULTS_PATH") or os.path.join(
+    REPO, "evaluation", "results", "logfire.json"
+)
 MIN_TS = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 notes = []
@@ -134,8 +136,13 @@ total_records = rows(resp)[0]["n"]
 notes.append(f"records in last 30d: {total_records}")
 
 # ---------------- 2. retrieval latency ----------------
+# The ant-agent project also holds a synthetic 10k-span corpus (dataset/,
+# service_name dataset-pilot*) — exclude it so the eval keeps measuring the
+# three demo traces, as in previous cohorts.
+SYNTH_EXCL = "service_name NOT IN ('dataset-pilot', 'dataset-pilot-probe')"
 LIST_SQL = ("SELECT trace_id, min(start_timestamp) AS started, count(*) AS spans "
-            "FROM records GROUP BY trace_id ORDER BY started DESC LIMIT 20")
+            f"FROM records WHERE {SYNTH_EXCL} "
+            "GROUP BY trace_id ORDER BY started DESC LIMIT 20")
 lat = []
 for _ in range(3):
     s, _, ms = q(LIST_SQL)
@@ -150,7 +157,7 @@ comp = {}
 s, resp, _ = q(
     "SELECT trace_id, span_id, parent_span_id, span_name, message, start_timestamp, "
     "end_timestamp, duration, attributes, otel_scope_name "
-    "FROM records ORDER BY start_timestamp DESC LIMIT 200")
+    f"FROM records WHERE {SYNTH_EXCL} ORDER BY start_timestamp DESC LIMIT 200")
 all_spans = rows(resp) if s == 200 else []
 notes.append(f"fetched {len(all_spans)} recent spans for completeness check")
 
@@ -174,6 +181,29 @@ for tid, sps in by_trace.items():
     if "tool" in names or "travel" in names or "get_weather" in names or "execute_tool" in names:
         tools_trace = tid
         break
+if tools_trace is None:
+    # The recency sample can miss the demo tool trace (e.g. when newer
+    # non-demo telemetry fills the window). Fetch it deterministically: latest
+    # non-synthetic trace containing a tool-marker span, then all its spans.
+    s2, r2c, _ = q(
+        "SELECT trace_id FROM records "
+        f"WHERE {SYNTH_EXCL} AND (span_name ILIKE '%get_weather%' "
+        "OR message ILIKE '%get_weather%' OR span_name ILIKE '%execute_tool%' "
+        "OR message ILIKE '%running tool%') "
+        "ORDER BY start_timestamp DESC LIMIT 1")
+    picked = rows(r2c) if s2 == 200 else []
+    if picked:
+        tid = picked[0]["trace_id"]
+        s3, r3c, _ = q(
+            "SELECT trace_id, span_id, parent_span_id, span_name, message, "
+            "start_timestamp, end_timestamp, duration, attributes, otel_scope_name "
+            f"FROM records WHERE trace_id = '{tid}' LIMIT 100")
+        if s3 == 200 and rows(r3c):
+            by_trace[tid] = rows(r3c)
+            tools_trace = tid
+            notes.append("tools trace fetched deterministically by tool-marker "
+                         "SQL (recency sample held no demo tool trace)")
+
 target_trace = tools_trace or (all_spans[0]["trace_id"] if all_spans else None)
 tsp = by_trace.get(target_trace, [])
 comp["inspected_trace_id"] = target_trace
