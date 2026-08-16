@@ -143,42 +143,43 @@ def bench_braintrust(env, mf):
     def btql(query):
         r = http.request("POST", f"{api}/btql", json={"query": query})
         r.raise_for_status()
-        return r.json().get("data", [])
+        return r.json()
 
-    frm = f"from: project_logs('{pid}')"
-    win = f"metrics.start > {lo_ts} and metrics.start < {hi_ts}"
-    scan_ms, rows = timed(lambda: btql(
-        f"select: id, metadata, metrics | {frm} "
-        f"| filter: metadata.model = '{MODEL}' and {win} | limit: 100"))
+    # SQL over /btql is the canonical read path since PR #7 (the BTQL pipe
+    # syntax remains accepted; /fetch is the legacy export route)
+    frm = f"FROM project_logs('{pid}')"
+    win = f"metrics.start > {lo_ts} AND metrics.start < {hi_ts}"
+    scan_ms, scan = timed(lambda: btql(
+        f"SELECT id, metadata, metrics {frm} "
+        f"WHERE metadata.model = '{MODEL}' AND {win} LIMIT 100"))
     agg_ms, agg = timed(lambda: btql(
-        f"{frm} | filter: {win} | dimensions: metadata.model as model "
-        f"| measures: count(1) as n, sum(metrics.prompt_tokens) as in_tok"))
+        f"SELECT metadata.model AS model, count(1) AS n, "
+        f"sum(metrics.prompt_tokens) AS in_tok {frm} WHERE {win} "
+        f"GROUP BY metadata.model"))
 
     t0 = time.perf_counter()
-    ids, cursor = set(), None
+    total, cursor = 0, None
     while True:
-        params = {"limit": 1000}
+        q = (f"SELECT id, metadata, metrics {frm} WHERE {win} "
+             f"ORDER BY _pagination_key DESC LIMIT 1000")
         if cursor:
-            params["cursor"] = cursor
-        body = http.request("GET", f"{api}/v1/project_logs/{pid}/fetch",
-                            params=params).json()
-        events = body.get("events", [])
-        for e in events:
-            start = (e.get("metrics") or {}).get("start")
-            if start is not None and lo_ts <= start <= hi_ts:
-                ids.add(e["id"])
+            q += f" OFFSET '{cursor}'"
+        body = btql(q)
+        rows = body.get("data", [])
+        total += len(rows)
         cursor = body.get("cursor")
-        if not cursor or not events:
+        if not cursor or not rows:
             break
     export_s = round(time.perf_counter() - t0, 1)
     return {
-        "filtered_scan_ms": scan_ms, "filtered_rows": len(rows),
+        "filtered_scan_ms": scan_ms, "filtered_rows": len(scan.get("data", [])),
         "aggregation_ms": agg_ms, "aggregation_supported": True,
-        "aggregation_sample": [a for a in agg if a.get("model")][:5],
-        "export_rows": len(ids), "export_wall_s": export_s,
-        "export_rows_per_s": round(len(ids) / export_s, 1),
-        "method": "BTQL for scan/agg; /fetch pages of 1000 for export "
-                  "(project also holds the 7-day corpus — scans cover ~2x rows)",
+        "aggregation_sample": [a for a in agg.get("data", []) if a.get("model")][:5],
+        "export_rows": total, "export_wall_s": export_s,
+        "export_rows_per_s": round(total / export_s, 1),
+        "method": "SQL over /btql for scan/agg/export (cursor OFFSET pages of "
+                  "1000); project also holds the 7-day corpus — the time "
+                  "window separates them server-side now",
     }
 
 

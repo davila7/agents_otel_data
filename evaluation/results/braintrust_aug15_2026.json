@@ -1,0 +1,73 @@
+{
+  "platform": "braintrust",
+  "notes": {
+    "retrieval_latency_all_ms": [
+      305.5,
+      268.7,
+      198.9
+    ],
+    "traces_found": {
+      "01_messages": true,
+      "02_tools": true,
+      "03_mcp": true
+    },
+    "example_llm_cost_usd": 0.005049,
+    "completeness_trace_used": "02_tools",
+    "aggregation_sample": [
+      {
+        "avg_tokens": 386,
+        "n": 12,
+        "t": "llm"
+      },
+      {
+        "avg_tokens": null,
+        "n": 5,
+        "t": "task"
+      },
+      {
+        "avg_tokens": null,
+        "n": 6,
+        "t": "tool"
+      }
+    ],
+    "export_format_results": {
+      "json": "HTTP 200, content-type=application/json",
+      "ndjson": "HTTP 200, content-type=application/json",
+      "csv": "HTTP 400, content-type=application/json; charset=utf-8",
+      "parquet": "HTTP 200, content-type=application/octet-stream"
+    },
+    "malformed_query_response": "HTTP 400: {\"Code\":\"BadRequestError\",\"Message\":\"Invalid query: Error: Parse error: SQL parse error: SQL parse error: sql parser error: Expected: end of statement, found: 1 at Line: 1, Column: 74 [user_email=dan.avila7@gmail.com] [user_org=AITMPL] [timestamp=1786830402.282]\",\"InternalTraceId\":\"6a80de42000000006"
+  },
+  "auth_works": true,
+  "retrieval_latency_ms": 268.7,
+  "completeness": {
+    "llm_input": true,
+    "llm_output": true,
+    "model_name": true,
+    "token_usage": true,
+    "cost_usd": true,
+    "latency_per_span": true,
+    "tool_call_args": true,
+    "tool_call_results": true,
+    "span_tree": true,
+    "span_count_tools_trace": 7
+  },
+  "query_flexibility": {
+    "filter_by_time": true,
+    "filter_by_name_or_attribute": true,
+    "aggregation": true,
+    "free_sql_or_dsl": true
+  },
+  "pagination": {
+    "mechanism": "cursor",
+    "second_page_verified": true
+  },
+  "export_formats": {
+    "json": true,
+    "ndjson": true,
+    "csv": false,
+    "parquet": true
+  },
+  "time_to_queryable_s": 0.4,
+  "dx_friction": "Auth is a single Bearer API key; the /btql endpoint worked on the first try with just the project id. SQL syntax is standard enough to write without dialect docs, though the span field layout still has to be looked up. Malformed query returned HTTP 400 with message: '{\"Code\":\"BadRequestError\",\"Message\":\"Invalid query: Error: Parse error: SQL parse error: SQL parse error: sql parser error: Expected: end of statement, found: 1 at Line: 1, Column: 74 [user_email=dan.' - error messages include parser position, which is helpful."
+}

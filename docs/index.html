@@ -206,8 +206,8 @@
     </div>
     <p class="desc">Ranking of agent-observability platforms on how well their <em>read APIs</em> give trace data back — the same three traced agent scenarios written into five OTEL-based backends, then benchmarked with executable scripts on 9 weighted criteria.</p>
     <div class="meta">
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 13, 2026</span>
-      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>4 benchmark runs</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6.4"/><path d="M8 4.5V8l2.4 1.6"/></svg>Aug 15, 2026</span>
+      <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8.2l1.8 1.8 3.4-4"/></svg>5 benchmark runs</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><ellipse cx="8" cy="4.5" rx="5.5" ry="2.2"/><path d="M2.5 4.5v7c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2v-7"/><path d="M2.5 8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2"/></svg>5 platforms</span>
       <span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>9 weighted criteria</span>
       <span><a href="https://github.com/davila7/agents_otel_data">github.com/davila7/agents_otel_data</a></span>
@@ -218,7 +218,8 @@
     <div class="run-picker">
       <label for="run-select">Results</label>
       <select id="run-select" aria-label="Benchmark run">
-        <option value="aug13" selected>Latest — Aug 13, 2026 · LangSmith v2</option>
+        <option value="aug15" selected>Latest — Aug 15, 2026 · Braintrust SQL</option>
+        <option value="aug13">Aug 13, 2026 · LangSmith v2</option>
         <option value="aug12">Aug 12, 2026 · 5 platforms</option>
         <option value="aug">Aug 3, 2026 · continuous</option>
         <option value="jul">Jul 2026 · judge panel</option>
@@ -233,7 +234,7 @@
       <table class="arena">
         <thead>
           <tr>
-            <th>Rank <span class="inf" data-tip="Rank range|Position across the scoring schemes tried: July banded, July continuous, and the Aug 3 / Aug 12 / Aug 13 continuous cohorts.">ⓘ</span></th>
+            <th>Rank <span class="inf" data-tip="Rank range|Position across the scoring schemes tried: July banded, July continuous, and the Aug 3 / Aug 12 / Aug 13 / Aug 15 continuous cohorts.">ⓘ</span></th>
             <th>Platform</th>
             <th>Score <span class="inf" data-tip="Score / 100|Bar = this cohort's total. Whisker = range of totals across the three scoring schemes (banded and continuous) — the honest uncertainty band.">ⓘ</span></th>
             <th>Δ vs prev <span class="inf" data-tip="Delta|Change vs the previous run under the same continuous scoring method.">ⓘ</span></th>
@@ -276,7 +277,7 @@
     <p class="h2-sub">The arena above queries projects holding 3 demo traces, so its latency column is dominated by HTTP round-trip. A separate benchmark loads ~10k byte-identical synthetic spans into all five platforms and measures the engine itself.</p>
     <div class="plat-grid">
       <div class="plat">
-        <p><span class="lab">The ranking inverts under load.</span> Logfire — 4th on simple request latency — aggregates 10k spans per model in <b>171 ms</b> (SQL GROUP BY) and exports at <b>14,280 rows/s</b>, an order of magnitude ahead of everyone. Even after its v2 migration cut everything 7&ndash;11x, LangSmith still takes <b>30 s</b> to hand back its own 10k rows (pages cap at 100).</p>
+        <p><span class="lab">The ranking inverts under load.</span> Logfire — 4th on simple request latency — aggregates 10k spans per model in <b>149 ms</b> (SQL GROUP BY) and exports at <b>19,992 rows/s</b>, an order of magnitude ahead of everyone. Even after its v2 migration cut everything 7&ndash;11x, LangSmith still takes <b>30 s</b> to hand back its own 10k rows (pages cap at 100).</p>
         <p style="margin-top:10px"><a class="method-btn" href="./query_bench.html">See the query benchmark <span aria-hidden="true">→</span></a></p>
       </div>
       <div class="plat">
@@ -298,9 +299,9 @@
       </div>
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--braintrust)"></span><span class="p-name">Braintrust</span></div>
-        <code>GET /v1/project_logs/{id}/fetch · POST /btql · Bearer</code>
-        <p><span class="lab">Strength:</span> BTQL query language and sub-second freshness (0.4&nbsp;s in both cohorts).</p>
-        <p><span class="lab">Friction:</span> JSON-only export; fetch pagination can re-return rows — dedupe by <b>id</b>.</p>
+        <code>POST /btql · SQL over project_logs() · Bearer</code>
+        <p><span class="lab">Strength:</span> standard SQL (contributed via PR #7 by Braintrust), three real export formats via <b>fmt</b> — json, ndjson, parquet — and sub-second freshness (0.4&nbsp;s in every cohort).</p>
+        <p><span class="lab">Friction:</span> csv returns 400; /fetch pagination can re-return rows — dedupe by <b>id</b>; demo traces aged out of the project between cohorts (retention), so evidence is fetched deterministically by span name.</p>
       </div>
       <div class="plat">
         <div class="p-line"><span class="p-dot" style="background:var(--langsmith)"></span><span class="p-name">LangSmith</span></div>
@@ -351,17 +352,39 @@ const PLATFORMS = {
 // July banded (final_scores.json), July continuous (final_scores_continuous.json),
 // Aug 3 continuous (final_scores_continuous_aug2026.json),
 // Aug 12 continuous (final_scores_continuous_aug12_2026.json),
-// Aug 13 continuous (final_scores_continuous_aug13_2026.json).
+// Aug 13 continuous (final_scores_continuous_aug13_2026.json),
+// Aug 15 continuous (final_scores_continuous_aug15_2026.json).
 // Phoenix joined in the Aug 12 cohort, so it has two scheme entries.
 const SCHEMES = {
-  logfire:    { totals: [96.40, 93.14, 88.73, 87.11, 85.28], ranks: [1, 1, 1, 2, 2] },
-  braintrust: { totals: [89.40, 91.00, 88.36, 84.53, 81.17], ranks: [2, 2, 2, 3, 4] },
-  langsmith:  { totals: [80.93, 76.46, 73.99, 67.25, 82.50], ranks: [3, 3, 4, 5, 3] },
-  langfuse:   { totals: [72.03, 65.63, 80.83, 79.66, 77.94], ranks: [4, 4, 3, 4, 5] },
-  phoenix:    { totals: [87.27, 87.27], ranks: [1, 1] },
+  logfire:    { totals: [96.40, 93.14, 88.73, 87.11, 85.28, 82.94], ranks: [1, 1, 1, 2, 2, 4] },
+  braintrust: { totals: [89.40, 91.00, 88.36, 84.53, 81.17, 86.20], ranks: [2, 2, 2, 3, 4, 2] },
+  langsmith:  { totals: [80.93, 76.46, 73.99, 67.25, 82.50, 83.54], ranks: [3, 3, 4, 5, 3, 3] },
+  langfuse:   { totals: [72.03, 65.63, 80.83, 79.66, 77.94, 77.42], ranks: [4, 4, 3, 4, 5, 5] },
+  phoenix:    { totals: [87.27, 87.27, 87.27], ranks: [1, 1, 1] },
 };
 
 const DATA = {
+  aug15: {
+    note: "August 15, 2026 cohort \u00b7 PRs #7/#12 (by Braintrust's dpguthrie + hardening) moved the Braintrust eval to standard SQL over /btql with fmt-based exports, so all five evals were re-run back-to-back (final_scores_continuous_aug15_2026.json). Braintrust export-formats re-scored mechanically 5 \u2192 10: json, ndjson and parquet actually received (csv \u2192 400). Demo traces had aged out of the Braintrust project between Aug 3 and Aug 12 \u2014 repopulated, and the eval now fetches demo traces deterministically. Langfuse's ingest lag returned to 8.6 s after Aug 13's 43.5 s outlier.",
+    ranking: ["phoenix", "braintrust", "langsmith", "logfire", "langfuse"],
+    totals:  { phoenix: 87.27, braintrust: 86.20, langsmith: 83.54, logfire: 82.94, langfuse: 77.42 },
+    // vs Aug 13 continuous totals
+    deltas:  { phoenix: 0.00, braintrust: +5.03, langsmith: +1.04, logfire: -2.34, langfuse: -0.52 },
+    scores: {
+      phoenix:    { "completeness": 10.0, "query-flex": 5.33, "dx-friction": 9.0,  "auth-access": 10.0, "latency": 10.0, "pagination": 10.0, "export-formats": 7.0,  "freshness": 10.0, "otel-fidelity": 10.0 },
+      braintrust: { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 2.11, "pagination": 10.0, "export-formats": 10.0, "freshness": 6.89, "otel-fidelity": 4.0 },
+      langsmith:  { "completeness": 10.0, "query-flex": 7.33, "dx-friction": 7.0,  "auth-access": 9.0,  "latency": 9.59, "pagination": 10.0, "export-formats": 5.0,  "freshness": 10.0, "otel-fidelity": 4.0 },
+      logfire:    { "completeness": 10.0, "query-flex": 10.0, "dx-friction": 8.0,  "auth-access": 10.0, "latency": 0.0,  "pagination": 10.0, "export-formats": 10.0, "freshness": 1.17, "otel-fidelity": 10.0 },
+      langfuse:   { "completeness": 10.0, "query-flex": 8.0,  "dx-friction": 7.33, "auth-access": 10.0, "latency": 5.74, "pagination": 10.0, "export-formats": 5.0,  "freshness": 0.0,  "otel-fidelity": 9.0 },
+    },
+    raw: {
+      phoenix:    { latency: 93.5,  freshness: 0.1 },
+      braintrust: { latency: 268.7, freshness: 0.4 },
+      langsmith:  { latency: 98.8,  freshness: 0.1 },
+      logfire:    { latency: 356.6, freshness: 5.1 },
+      langfuse:   { latency: 165.4, freshness: 8.6 },
+    },
+  },
   aug13: {
     note: "August 13, 2026 cohort · community PR #6 migrated the LangSmith eval off the deprecated v1 runs query onto the v2 runs/traces query APIs, so all five evals were re-run back-to-back (final_scores_continuous_aug13_2026.json). LangSmith's dx-friction re-scored mechanically 5.67 → 7 (structured 400 vs the old generic parse error). Logfire and Langfuse read paths now share their projects with the 10k synthetic corpus (dataset/) — demo-trace evidence is fetched deterministically. 0.1 s freshness readings (Phoenix, LangSmith) are bounded by the poll loop's first iteration, not sub-second precision. Langfuse's 43.5 s ingest lag is its worst measured (10.7 s Aug 3, 6.4 s Aug 12) — flagged for re-check.",
     ranking: ["phoenix", "logfire", "langsmith", "braintrust", "langfuse"],
@@ -573,7 +596,7 @@ document.addEventListener("mousemove", e => {
   tip.style.left = x + "px"; tip.style.top = y + "px";
 });
 
-render("aug13");
+render("aug15");
 </script>
 </body>
 </html>

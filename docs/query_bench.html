@@ -59,7 +59,7 @@
   <header>
     <h1>Query Bench</h1>
     <p class="desc">Query-engine performance over a <b>9,996-span synthetic corpus</b> — byte-identical OTLP data in all five platforms (seed 43, 12-hour window, parity-gated). This measures what the 3-trace cohorts could not: the engine behind the endpoint, not the HTTP round trip.</p>
-    <p class="meta">Aug 13, 2026 (re-run on LangSmith v2 APIs) · <span style="font-family:var(--mono)">dataset/out_v2/query_bench.json</span> · pipeline: <a href="https://github.com/davila7/agents_otel_data/tree/main/dataset">dataset/</a></p>
+    <p class="meta">Aug 15, 2026 (re-run: LangSmith v2 + Braintrust SQL-over-/btql) · <span style="font-family:var(--mono)">dataset/out_v2/query_bench.json</span> · pipeline: <a href="https://github.com/davila7/agents_otel_data/tree/main/dataset">dataset/</a></p>
   </header>
 
   <section>
@@ -98,7 +98,7 @@
     <h2>Read these before quoting the numbers</h2>
     <div class="card"><ul class="caveats">
       <li><b>Logfire timings exclude its client-side pacing.</b> The ~10 queries/min rate limit is paid with untimed 7 s sleeps between calls; wall-clock including pacing is 14.7 s for the export. The engine is fast; the meter is small.</li>
-      <li><b>Braintrust scans ~2× the rows.</b> Its pilot project also holds the earlier 7-day corpus, and BTQL filters can't fully hide that from the scan path.</li>
+      <li><b>Braintrust now measures through SQL over /btql</b> (its canonical path since PR #7): the time-window filter runs server-side and export uses cursor-paged SQL — 7x faster than the legacy /fetch route (62 → 8.5 s). Its pilot project still holds the earlier 7-day corpus, but the SQL WHERE excludes it server-side.</li>
       <li><b>LangSmith's numbers are from the v2 query APIs.</b> The deprecated v1 path measured 2,177 ms scans and a 329 s export in the first pass — v2 cut those 7–11x. What remains: pages cap at 100 rows (so a 10k export is ~100 round trips) and the only server-side aggregate is the fixed-shape v1 <span style="font-family:var(--mono)">/runs/stats</span> (5.6 s, no GROUP BY).</li>
       <li><b>Langfuse and Logfire share projects with the live benchmark data</b> (time-window + service-name isolation); the other three use dedicated pilot projects.</li>
       <li>Single machine, single session, n=3 medians for scans/aggregations, n=1 for exports. 10k spans is the pilot scale — the 200k run is where these gaps should be re-measured.</li>
@@ -118,15 +118,15 @@ const P = {
 };
 // transcribed from dataset/out_v2/query_bench.json — do not edit by hand
 const D = {
-  logfire:    {scan:168.7, agg:171.2,  aggKind:"SQL GROUP BY",    exp:0.7,   rps:14280.0, rows:9996,
+  logfire:    {scan:157.0, agg:148.8,  aggKind:"SQL GROUP BY",    exp:0.5,   rps:19992.0, rows:9996,
                method:"SQL /v2/query, pages of 5000 (pacing untimed)"},
-  braintrust: {scan:1070.7, agg:590.4, aggKind:"BTQL dims/measures", exp:62.0, rps:161.3, rows:9998,
-               method:"BTQL scan/agg; /fetch pages of 1000"},
-  langsmith:  {scan:304.6, agg:5571.9, aggKind:"fixed-shape stats",  exp:30.2, rps:331.0, rows:9995,
+  braintrust: {scan:815.8, agg:551.2,  aggKind:"SQL GROUP BY (/btql)", exp:8.5, rps:1176.2, rows:9998,
+               method:"SQL over /btql: scan/agg/export, cursor pages of 1000"},
+  langsmith:  {scan:305.6, agg:5571.3, aggKind:"fixed-shape stats",  exp:30.6, rps:326.6, rows:9995,
                method:"v2 runs/query DSL (next_cursor); 100/page; stats via v1"},
-  langfuse:   {scan:261.4, agg:295.2,  aggKind:"metrics API",     exp:4.6,   rps:2174.1, rows:10001,
+  langfuse:   {scan:499.3, agg:294.2,  aggKind:"metrics API",     exp:4.6,   rps:2174.1, rows:10001,
                method:"v2 observations name filter; pages of 1000"},
-  phoenix:    {scan:325.3, agg:null,   aggKind:"none (client-side)", exp:5.4, rps:1851.5, rows:9998,
+  phoenix:    {scan:290.1, agg:null,   aggKind:"none (client-side)", exp:5.3, rps:1886.4, rows:9998,
                method:"REST /spans attribute filter; pages of 1000"},
 };
 
